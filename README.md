@@ -1,6 +1,4 @@
-<center>
-![Spydar](spdr/static/spydar.jpg "Spydar")
-</center>
+![Spydar](spdr/static/spydar.jpg)
 
 #Summary
 The Spydar program measures dns records in dns caches by setting the RD bit to zero. It has a web interface for viewing the results.
