@@ -1,0 +1,13 @@
+    #scrolling-text-container {
+        width: 100%; /* Or desired width */
+        height: 200px; /* Or desired height */
+        overflow: hidden;
+        position: relative;
+    }
+
+    #scrolling-text {
+        position: absolute;
+        bottom: 0; /* Start from the bottom */
+        left: 0;
+        width: 100%;
+    }
