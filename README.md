@@ -18,7 +18,7 @@ To compile this program you need:<br>
 go version go1.24.9 linux/amd64
 <br><br>
 If you have a modern Golang installed:<br>
-`make`
+`make` <br>
 <br>
 Then:<br>
 `cd spdr/inputs` <br>
