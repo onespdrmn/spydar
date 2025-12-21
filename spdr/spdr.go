@@ -208,6 +208,7 @@ func main() {
 		log.Fatal(http.ListenAndServe(port, nil))
 	}()
 
+	//make sure the web server is up before continuing
 	time.Sleep(2 * time.Second)
 
 	if *inputFile != "" {
@@ -671,7 +672,7 @@ th {
 }
 
 tr:nth-child(odd) {
-  background-color: salmon;
+  background-color: #8A7B7B;
 }
 
 tr:nth-child(even) {
@@ -821,7 +822,7 @@ body {
 	fmt.Fprintln(w, "</style>")
 	fmt.Fprintln(w, "</head>")
 
-	fmt.Fprintln(w, "<body style=\"background-color: salmon;\">")
+	fmt.Fprintln(w, "<body style=\"background-color: #71A8DE;\">")
 
 	fmt.Fprintln(w, sidebar)
 
@@ -1185,19 +1186,6 @@ func measure() {
 	go receiveanswers1()
 	go receiveanswers2()
 	time.Sleep(2 * time.Second)
-
-	/*
-		dnsservers, err := getDNSServers()
-		if err != nil {
-			fmt.Println("error getting dns server list")
-			return
-		}
-
-		//determine which cache servers are alive and mark them as alive or dead
-		determineDnscacheHealth(dnsservers)
-
-		checkDnscacheRecursionBit(validatedserverlist)
-	*/
 
 	for {
 
