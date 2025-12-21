@@ -23,8 +23,7 @@ If you have a modern Golang installed:<br>
 `make` <br>
 <br>
 Then:<br>
-`cd spdr/inputs` <br>
-`python3 -m http.server &` <br>
+`cd spdr/` <br>
 
 If on Linux run:<br>
 `./spdr.linux`<br>

@@ -189,9 +189,26 @@ func main() {
 	noMeasurement = flag.Bool("nomeasurement", false, "do not perform measurements but start the web application")
 
 	//TODO: change URL later
-	*urlinputFile = "http://localhost:8000/malphish.txt"
+	*urlinputFile = "http://localhost:8080/malphish.txt"
 
 	flag.Parse()
+
+	http.HandleFunc("/viewall", viewAllHandler)
+	http.HandleFunc("/viewunique", viewUniqueHandler)
+	http.HandleFunc("/scrollbuffer", scrollHandler)
+	http.HandleFunc("/settings", settingsHandler)
+	http.HandleFunc("/help", helpHandler)
+	fileHandler := http.FileServer(http.Dir("inputs")) // Serve static files from  "inputs" directory
+	http.Handle("/", fileHandler)
+
+	// Start the server in a goroutine
+	go func() {
+		port := ":8080"
+		fmt.Printf("Server starting on port %s\n", port)
+		log.Fatal(http.ListenAndServe(port, nil))
+	}()
+
+	time.Sleep(2 * time.Second)
 
 	if *inputFile != "" {
 		fmt.Println("init - reading list from file")
@@ -913,27 +930,28 @@ var updateBytes []byte
 
 func onReady() {
 	systray.SetTemplateIcon(icon.Data, icon.Data)
-	systray.SetTitle("put something here")
-	systray.SetTooltip("something here too")
+	systray.SetTitle("Spydar")
+	systray.SetTooltip("Spydar DNS Measurement Tool")
 
 	addQuitItem()
 
-	// Serve static files from a "static" directory (or adjust as needed)
-	//http.Handle("/", http.FileServer(http.Dir("./data")))
-	http.HandleFunc("/viewall", viewAllHandler)
-	http.HandleFunc("/viewunique", viewUniqueHandler)
-	http.HandleFunc("/scrollbuffer", scrollHandler)
-	http.HandleFunc("/settings", settingsHandler)
-	http.HandleFunc("/help", helpHandler)
-	fileHandler := http.FileServer(http.Dir("./static"))
-	http.Handle("/", fileHandler)
+	/*
+		// Serve static files from a "static" directory (or adjust as needed)
+		http.HandleFunc("/viewall", viewAllHandler)
+		http.HandleFunc("/viewunique", viewUniqueHandler)
+		http.HandleFunc("/scrollbuffer", scrollHandler)
+		http.HandleFunc("/settings", settingsHandler)
+		http.HandleFunc("/help", helpHandler)
+		fileHandler := http.FileServer(http.Dir("./static"))
+		http.Handle("/", fileHandler)
 
-	// Start the server in a goroutine
-	go func() {
-		port := ":8080"
-		fmt.Printf("Server starting on port %s\n", port)
-		log.Fatal(http.ListenAndServe(port, nil))
-	}()
+		// Start the server in a goroutine
+		go func() {
+			port := ":8080"
+			fmt.Printf("Server starting on port %s\n", port)
+			log.Fatal(http.ListenAndServe(port, nil))
+		}()
+	*/
 
 	// We can manipulate the systray in other goroutines
 	go func() {
