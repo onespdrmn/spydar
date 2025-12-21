@@ -590,7 +590,7 @@ func viewUniqueHandler(w http.ResponseWriter, req *http.Request) {
 			rows += fmt.Sprintf("%v,%v\n", name, description)
 		}
 	} else {
-		columnnames = "id,timestamp,name,domaintype,dnsserver,answers,otherlinks"
+		columnnames = "id,time seen in cache,dns name,domaintype,dnsserver,answers,otherlinks"
 		for row.Next() {
 			var id int
 			var timestamp string
@@ -634,7 +634,7 @@ func geminiLink(value string) string {
 }
 
 func googleLink(value string) string {
-	return fmt.Sprintf("<a href=https://www.google.com/search?q=is+%v+malware.+is+there+any+malicious+code+running+on+this+website?>ai prompt</a>", value)
+	return fmt.Sprintf("<a href=https://www.google.com/search?q=is+%v+malware?>ai prompt</a>", value)
 }
 
 func makeLink(value string) string {
@@ -888,15 +888,14 @@ func viewAllHandler(w http.ResponseWriter, req *http.Request) {
 
 	db := sqliteDatabase
 
-	///TODO limit 1000 needs removed!!!
-	row, err = db.Query("SELECT * from measurements join descriptions on measurements.name = descriptions.name limit 1000")
+	row, err = db.Query("SELECT * from measurements join descriptions on measurements.name = descriptions.name")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer row.Close()
 
 	rows := ""
-	columnnames := "id,timestamp,name,domaintype,dnsserver,answers,description"
+	columnnames := "id,timestamp,name,domaintype,dnsserver,description,answers"
 	for row.Next() { // Iterate and fetch the records from result cursor
 		var id int
 		var timestamp string
@@ -914,7 +913,7 @@ func viewAllHandler(w http.ResponseWriter, req *http.Request) {
 		}
 		_ = name2
 		answers = strings.ReplaceAll(answers, ",", ";")
-		rows += fmt.Sprintf("%v,%v,%v,%v,%v,%v,%v\n", id, timestamp, name, domaintype, dnsserver, answers, description)
+		rows += fmt.Sprintf("%v,%v,%v,%v,%v,%v,%v\n", id, timestamp, name, domaintype, dnsserver, description, answers)
 		//fmt.Println(count, id, timestamp, name)
 		count++
 	}
