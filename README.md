@@ -21,7 +21,8 @@ If you have a modern Golang installed:
 `make`
 
 Then:
-`cd spdr`
+`cd spdr/inputs`
+`python3 -m http.server &`
 
 If on Linux run:
 `./spdr.linux`
