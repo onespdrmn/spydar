@@ -19,19 +19,18 @@ go version go1.24.9 linux/amd64
 <br><br>
 If you have a modern Golang installed:<br>
 `make`
-
-Then:
+<br>
+Then:<br>
 `cd spdr/inputs` <br>
 `python3 -m http.server &` <br>
 
+
 If on Linux run:<br>
-`./spdr.linux`
+`./spdr.linux`<br>
 
 If on Windows run:<br>
-`./spdr.windows`
-
-<br><br>
-
+`./spdr.windows`<br>
+<br>
 # Usage
 When the program starts, there will be a icon that appears in your system tray.  It has a small spider icon. Click this icon and choose 'Status'.  This will pull up
 your default web browser and you will be able to click through the application to learn about the web sites in the measurement list. 
