@@ -1,8 +1,8 @@
 ![Spydar](spdr/static/spydar.jpg)
 
 # Summary
-The Spydar program measures dns records in dns caches by setting the RD bit to zero. This can be used to find malware command and control domains that 
-are found by periodically measuring a cache.  It has a web interface for viewing the results.
+The Spydar program measures dns records in dns caches by setting the recursion desired (RD) bit to zero. This can be used to find malware domains that 
+are found by periodically measuring caches.  It has a web interface for viewing the results of it's measurements.
 
 This program functions as a system tray application that starts a web server on localhost for viewing the program's output.
 I recommend you start it in the foreground initially so you can see when it finds dns records you are looking for.  
