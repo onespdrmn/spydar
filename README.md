@@ -14,10 +14,10 @@ by updating /etc/resolv.conf or using the -dnsinput <file> option on spydar.  By
 for measurement.  This program is not IPv6 compatible at the present time (future work).  It will skip over IPv6 dns caches.
 
 # Compile
-To compile this program you need:
+To compile this program you need:<br>
 go version go1.24.9 linux/amd64
-
-If you have a modern Golang installed:
+<br><br>
+If you have a modern Golang installed:<br>
 `make`
 
 Then:
