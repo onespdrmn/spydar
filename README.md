@@ -29,7 +29,7 @@ If on Linux run:<br>
 `./spdr.linux`<br>
 
 If on Windows run:<br>
-spdr.windows`<br>
+`spdr.windows`<br>
 <br>
 # Usage
 When the program starts, there will be a icon that appears in your system tray.  It has a small spider icon. Click this icon and choose 'Status'.  This will pull up
