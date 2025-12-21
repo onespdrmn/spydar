@@ -21,14 +21,16 @@ If you have a modern Golang installed:
 `make`
 
 Then:
-`cd spdr/inputs
-python3 -m http.server &`
+`cd spdr/inputs` <br>
+`python3 -m http.server &` <br>
 
-If on Linux run:
+If on Linux run:<br>
 `./spdr.linux`
 
-If on Windows run:
+If on Windows run:<br>
 `./spdr.windows`
+
+<br><br>
 
 # Usage
 When the program starts, there will be a icon that appears in your system tray.  It has a small spider icon. Click this icon and choose 'Status'.  This will pull up
