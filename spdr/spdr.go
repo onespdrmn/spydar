@@ -1265,7 +1265,7 @@ func measure() {
 		}
 
 		fmt.Println("sleeping")
-		time.Sleep(time.Second * 60 * 20) //wake every 1 minutes
+		time.Sleep(time.Second * 60 * 20) //wake every 20 minutes
 		fmt.Println("awakening")
 	}
 }
