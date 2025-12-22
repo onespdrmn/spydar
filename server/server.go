@@ -20,6 +20,13 @@ var dberr error
 
 // initialize database connection
 func init() {
+	username := os.Getenv("MYSQL_USERNAME")
+	password := os.Getenv("MYSQL_PASSWORD")
+
+	if username == "" || password == "" {
+		log.Fatal("MYSQL_USERNAME || MYSQL_PASSWORD environment variables are empty")
+	}
+
 	dsn := username + ":" + password + "@tcp(127.0.0.1:3306)/production"
 	fmt.Println("Connecting to:", dsn)
 

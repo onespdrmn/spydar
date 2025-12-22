@@ -19,7 +19,7 @@ It can also update itself to add new features later.  This feature is not curren
 To compile this program you need a modern Linux computer with at least:<br>
 go version go1.24.9 linux/amd64
 <br><br>
-If you have a modern Golang installed:<br>
+
 `make` <br>
 <br>
 `make install` <br>
