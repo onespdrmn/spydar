@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	url := "https://github.com/onespdrmn/spydar/blob/main/build/spdr." + runtime.GOOS
+	url := "https://github.com/onespdrmn/spydar/releases/download/untagged-8c4f2a45ea7550b10b7b/spdr." + runtime.GOOS
 	prepend := ""
 
 	if runtime.GOOS != "windows" {
