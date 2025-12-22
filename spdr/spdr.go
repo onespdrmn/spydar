@@ -193,9 +193,6 @@ func main() {
 	noMeasurement = flag.Bool("nomeasurement", false, "do not perform measurements but start the web application")
 	sendRemoteServer = flag.Bool("sendremote", false, "send results to remote server")
 
-	//TODO: change URL later
-	//*urlinputFile = "http://localhost:8080/malphish.txt"
-
 	flag.Parse()
 
 	http.HandleFunc("/viewall", viewAllHandler)
@@ -222,9 +219,10 @@ func main() {
 	} else {
 		//fmt.Println("init - reading list from web")
 		//measurelist, err = readListFromWeb(*urlinputFile)
+
+		//an initial list is packaged with binary to make deployment easier
 		strbuf := string(malwareBytes)
 		lines := strings.Split(strbuf, "\n")
-
 		measurelist, err = processLines(lines)
 	}
 
