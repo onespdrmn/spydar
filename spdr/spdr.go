@@ -1298,7 +1298,7 @@ var client *http.Client
 var transport *http.Transport
 var cert tls.Certificate
 var certerr error
-var uniqueId string = ""
+var uniqueId string = "blank"
 
 func insertRecord(db *sql.DB, dnsserver string, t time.Time, domainname string, domaintype string, domaindescr string, answer *dns.Msg) {
 	var anslist []string
@@ -1421,6 +1421,11 @@ func getMachineUUID() (string, error) {
 }
 
 func storeRemoteResult(timestr string, domainname string, domaintype string, dnsserver string, answers string, uniqueId string) {
+
+	if client == nil {
+		return
+	}
+
 	targetURL := "https://data.spydar.org/input"
 	u, err := url.Parse(targetURL)
 	if err != nil {
