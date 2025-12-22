@@ -6,7 +6,7 @@ all: doit
 doit:
 	make -C update
 	make -C spdr
-	make -C server
+	#make -C server
 
 clean:
 	make -C update clean
