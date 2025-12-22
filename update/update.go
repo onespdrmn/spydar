@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	url := "https://github.com/onespdrmn/spydar/releases/download/untagged-8c4f2a45ea7550b10b7b/spdr." + runtime.GOOS
+	url := "https://github.com/onespdrmn/spydar/releases/download/release-0.1/spdr." + runtime.GOOS
 	prepend := ""
 
 	if runtime.GOOS != "windows" {
@@ -25,7 +25,7 @@ func main() {
 	///download the new version
 	err := downloadFile(exename+".new", url)
 	if err != nil {
-		fmt.Println("download update failed:", url)
+		fmt.Println("download update failed:", url, err)
 		return
 	}
 
@@ -74,7 +74,7 @@ func downloadFile(filepath string, url string) error {
 	}
 
 	// 3. Create the local file to save the downloaded content
-	out, err := os.Create(filepath)
+	out, err := os.OpenFile(filepath, os.O_CREATE|os.O_RDWR, 0755)
 	if err != nil {
 		return fmt.Errorf("failed to create file: %w", err)
 	}
