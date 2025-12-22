@@ -142,14 +142,23 @@ func main() {
 		RootCAs:      caCertPool,
 	}
 
+	mux := http.NewServeMux()
+
+	fs := http.FileServer(http.Dir("./assets"))
+
+	// StripPrefix ensures the server looks for 'logo.png' in './assets/'
+	// instead of './assets/static/logo.png'
+	mux.Handle("/static/", http.StripPrefix("/static/", fs))
+
+	// setup the database input handler
+	mux.HandleFunc("/input", inputHandler)
+
 	// Create a Server instance to listen on port 8443 with the TLS config
 	server := &http.Server{
 		Addr:      ":443",
 		TLSConfig: tlsConfig,
+		Handler: mux,
 	}
-
-	// setup the database input handler
-	http.HandleFunc("/input", inputHandler)
 
 	// Listen to HTTPS connections with the server certificate and wait
 	log.Fatal(server.ListenAndServeTLS(server_pub_key, server_pri_key))
