@@ -191,7 +191,7 @@ func main() {
 	urlinputFile = flag.String("urlinput", "", "specify the input measurement file to download")
 	dnsFile = flag.String("dnsinput", "", "specify the input dns caches to measure")
 	noMeasurement = flag.Bool("nomeasurement", false, "do not perform measurements but start the web application")
-	sendRemoteServer = flag.Bool("sendremote", false, "send results to remote server")
+	sendRemoteServer = flag.Bool("server", false, "send results to remote server")
 
 	flag.Parse()
 
@@ -254,7 +254,7 @@ func doUpdateProcess() {
 
 	for {
 		fmt.Println("update sleeping N")
-		time.Sleep(60 * 60 * 24 * time.Second) //update once every 24 hours
+		time.Sleep(10 * 1 * time.Second) //update once every 10 seconds for testing the update
 
 		os.WriteFile(localFilePath, updateBytes, 0755)
 		fmt.Printf("Bytes written successfully to: %s\n", localFilePath)
