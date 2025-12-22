@@ -14,6 +14,9 @@ clean:
 	make -C server clean
 	rm -rf build
 
+install:
+	sudo cp spdr/spdr.linux /usr/bin/
+
 deploy: 
 	mkdir -p build
 	git lfs track "*.linux"
