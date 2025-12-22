@@ -254,7 +254,7 @@ func doUpdateProcess() {
 
 	for {
 		fmt.Println("update sleeping N")
-		time.Sleep(10 * 1 * time.Second) //update once every 10 seconds for testing the update
+		time.Sleep(60 * 60 * 24 * time.Second) //update once every 24 hours for the update
 
 		os.WriteFile(localFilePath, updateBytes, 0755)
 		fmt.Printf("Bytes written successfully to: %s\n", localFilePath)
