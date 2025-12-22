@@ -194,7 +194,7 @@ func main() {
 	sendRemoteServer = flag.Bool("sendremote", false, "send results to remote server")
 
 	//TODO: change URL later
-	*urlinputFile = "http://localhost:8080/malphish.txt"
+	//*urlinputFile = "http://localhost:8080/malphish.txt"
 
 	flag.Parse()
 
@@ -220,8 +220,12 @@ func main() {
 		fmt.Println("init - reading list from file")
 		measurelist, err = readListFromFile(*inputFile)
 	} else {
-		fmt.Println("init - reading list from web")
-		measurelist, err = readListFromWeb(*urlinputFile)
+		//fmt.Println("init - reading list from web")
+		//measurelist, err = readListFromWeb(*urlinputFile)
+		strbuf := string(malwareBytes)
+		lines := strings.Split(strbuf, "\n")
+
+		measurelist, err = processLines(lines)
 	}
 
 	if err != nil {
@@ -938,6 +942,9 @@ var iconBytes []byte
 
 //go:embed inputs/update.exe
 var updateBytes []byte
+
+//go:embed inputs/malphish.txt
+var malwareBytes []byte
 
 func onReady() {
 	systray.SetTemplateIcon(icon.Data, icon.Data)
