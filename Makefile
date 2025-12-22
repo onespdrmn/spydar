@@ -1,7 +1,7 @@
 KEY:=$(HOME)/keys/data.spydar.org.pem
 SERVER:=ec2-user@18.221.243.83
 
-all: doit deploy
+all: doit 
 
 doit:
 	make -C update
