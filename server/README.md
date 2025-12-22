@@ -45,6 +45,7 @@ yum install mariadb1011-client-utils.x86_64 mariadb1011-server.x86_64 mariadb101
 sudo systemctl start mariadb
 sudo systemctl enable mariadb
 sudo mysql_secure_installation
+go get -u github.com/go-sql-driver/mysql
 
 
 

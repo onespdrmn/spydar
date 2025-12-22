@@ -2,3 +2,4 @@
 *.pub
 keys/*
 keys
+password.go
