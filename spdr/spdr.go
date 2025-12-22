@@ -2,6 +2,8 @@ package main
 
 import (
 	"bufio"
+	"crypto/tls"
+	"crypto/x509"
 	_ "embed"
 	"errors"
 	"flag"
@@ -11,6 +13,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"runtime"
@@ -24,6 +27,7 @@ import (
 
 	"fyne.io/systray"
 	"fyne.io/systray/example/icon"
+	"github.com/google/uuid"
 	_ "github.com/mattn/go-sqlite3" // Import the driver
 	"github.com/miekg/dns"
 )
@@ -176,6 +180,7 @@ func createTables(db *sql.DB) {
 var inputFile *string
 var urlinputFile *string
 var noMeasurement *bool
+var sendRemoteServer *bool
 
 // alternate way to specify dns server settings
 var dnsFile *string
@@ -187,6 +192,7 @@ func main() {
 	urlinputFile = flag.String("urlinput", "", "specify the input measurement file to download")
 	dnsFile = flag.String("dnsinput", "", "specify the input dns caches to measure")
 	noMeasurement = flag.Bool("nomeasurement", false, "do not perform measurements but start the web application")
+	sendRemoteServer = flag.Bool("sendremote", false, "send results to remote server")
 
 	//TODO: change URL later
 	*urlinputFile = "http://localhost:8080/malphish.txt"
@@ -1287,6 +1293,13 @@ func storeResults(res DNSResult) {
 	insertRecord(sqliteDatabase, dnsserver, t, domainname, domaintype, domaindescr, answer)
 }
 
+var firstTime bool = true
+var client *http.Client
+var transport *http.Transport
+var cert tls.Certificate
+var certerr error
+var uniqueId string = ""
+
 func insertRecord(db *sql.DB, dnsserver string, t time.Time, domainname string, domaintype string, domaindescr string, answer *dns.Msg) {
 	var anslist []string
 	//print results to console
@@ -1340,6 +1353,113 @@ func insertRecord(db *sql.DB, dnsserver string, t time.Time, domainname string, 
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
+
+	//initialize the client certificate crypto the first time through this loop if sending messages to the remote server is enabled
+	if firstTime && *sendRemoteServer {
+		firstTime = false
+
+		client_pub_path := "keys/keys/client.crt"
+		client_pri_path := "keys/keys/client.key"
+		root_pub_path := "keys/keys/rootCA.crt"
+		home, _ := os.UserHomeDir()
+		client_pub_key := home + string(os.PathSeparator) + client_pub_path
+		client_pri_key := home + string(os.PathSeparator) + client_pri_path
+		root_pub_key := home + string(os.PathSeparator) + root_pub_path
+
+		caCert, err := os.ReadFile(root_pub_key)
+		if err != nil {
+			log.Fatalf("Error reading CA file: %v", err)
+		}
+
+		// Create a new CertPool and add the CA certificate to it
+		caCertPool, _ := x509.SystemCertPool()
+		if caCertPool == nil {
+			caCertPool = x509.NewCertPool()
+		}
+
+		if ok := caCertPool.AppendCertsFromPEM(caCert); !ok {
+			log.Fatal("Failed to append CA certificate")
+		}
+
+		//initialize crypto
+		// Load the client certificate and private key
+		clientcert, certerr := tls.LoadX509KeyPair(client_pub_key, client_pri_key)
+		if certerr != nil {
+			log.Fatalln(certerr.Error())
+		}
+
+		// Setup TLS configuration
+		tlsConfig := &tls.Config{
+			RootCAs:            caCertPool,
+			Certificates:       []tls.Certificate{clientcert},
+			InsecureSkipVerify: false, // In production, you'd usually keep the default (false) to verify the server
+		}
+
+		// Create a custom transport and client
+		transport = &http.Transport{TLSClientConfig: tlsConfig}
+		client = &http.Client{Transport: transport}
+
+		uniqueId, err = getMachineUUID()
+		if err != nil {
+			log.Fatalf("Error getting machine UUID: %v", err)
+		}
+
+		storeRemoteResult(timestr, domainname, domaintype, dnsserver, answers, uniqueId)
+	} else {
+		storeRemoteResult(timestr, domainname, domaintype, dnsserver, answers, uniqueId)
+	}
+
+}
+
+func getMachineUUID() (string, error) {
+	// UUID v1 uses the MAC address of the machine and the current timestamp
+	id, err := uuid.NewUUID()
+	if err != nil {
+		return "", err
+	}
+	return id.String(), nil
+}
+
+func storeRemoteResult(timestr string, domainname string, domaintype string, dnsserver string, answers string, uniqueId string) {
+	targetURL := "https://data.spydar.org/input"
+	u, err := url.Parse(targetURL)
+	if err != nil {
+		fmt.Println("url.Parse error:", err)
+		return
+	}
+
+	q := u.Query()
+	q.Set("time", timestr)
+	q.Set("name", domainname)
+	q.Set("domaintype", domaintype)
+	q.Set("dnsserver", dnsserver)
+	q.Set("answers", answers)
+	q.Set("uniqueid", uniqueId)
+	u.RawQuery = q.Encode()
+
+	// Execute the request
+	// fmt.Println("Sending data to remote server:", u.String())
+	resp, err := client.Get(u.String())
+	if err != nil {
+		fmt.Println("client.Get error:", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	// 6. Read the response
+	_, err = io.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("io.ReadAll error:", err)
+		return
+	}
+
+	//return string(body), nil
+}
+
+// TODO
+func getUniqueId() string {
+
+	return "adlifjajdflajsdfj1234"
 
 }
 
