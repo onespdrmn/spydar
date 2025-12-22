@@ -16,6 +16,7 @@ clean:
 
 install:
 	sudo cp build/spdr.linux /usr/bin/
+	sudo cp build/server.linux /usr/bin/spdr-server
 
 deploy: 
 	mkdir -p build
