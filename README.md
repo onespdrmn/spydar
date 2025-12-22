@@ -22,14 +22,11 @@ go version go1.24.9 linux/amd64
 If you have a modern Golang installed:<br>
 `make` <br>
 <br>
-Then:<br>
-`cd spdr` <br>
-
+`make install` <br>
+<br>
 If on Linux run:<br>
-`./spdr.linux`<br>
+`spdr.linux`<br>
 
-If on Windows run:<br>
-`spdr.windows`<br>
 <br>
 # Usage
 When the program starts, there will be a icon that appears in your system tray.  It has a small spider icon. Click this icon and choose 'Status'.  This will pull up
