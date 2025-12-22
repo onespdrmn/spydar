@@ -27,7 +27,6 @@ import (
 
 	"fyne.io/systray"
 	"fyne.io/systray/example/icon"
-	"github.com/google/uuid"
 	_ "github.com/mattn/go-sqlite3" // Import the driver
 	"github.com/miekg/dns"
 )
@@ -201,7 +200,7 @@ func main() {
 
 	http.HandleFunc("/viewall", viewAllHandler)
 	http.HandleFunc("/viewunique", viewUniqueHandler)
-	http.HandleFunc("/scrollbuffer", scrollHandler)
+	//http.HandleFunc("/scrollbuffer", scrollHandler)
 	http.HandleFunc("/settings", settingsHandler)
 	http.HandleFunc("/help", helpHandler)
 	fileHandler := http.FileServer(http.Dir("inputs")) // Serve static files from  "inputs" directory
@@ -832,16 +831,19 @@ body {
 
 	fmt.Fprintln(w, sidebar)
 
-	//picture
-	/*fmt.Fprintln(w, "<div class=iframe-container>")
-	fmt.Fprintln(w, "<iframe class=my-iframe1 src=\"frame1.html\"></iframe>")
-	fmt.Fprintln(w, "</div>")
+	/*
+		//picture
+		fmt.Fprintln(w, "<div class=iframe-container>")
+		fmt.Fprintln(w, "<iframe class=my-iframe1 src=\"frame1.html\"></iframe>")
+		fmt.Fprintln(w, "</div>")
 	*/
 
-	///javascript scroll window
-	fmt.Fprintln(w, "<div class=iframe-container>")
-	fmt.Fprintln(w, "<canvas class=fblogo id=myCanvas width=640 height=400></canvas>")
-	fmt.Fprintln(w, "</div>")
+	/*
+		///javascript scroll window
+		fmt.Fprintln(w, "<div class=iframe-container>")
+		fmt.Fprintln(w, "<canvas class=fblogo id=myCanvas width=640 height=400></canvas>")
+		fmt.Fprintln(w, "</div>")
+	*/
 
 	fmt.Fprintln(w, "<br><br>")
 
@@ -873,7 +875,10 @@ body {
 	}
 	fmt.Fprintln(w, "</tbody>")
 	fmt.Fprintln(w, "</table>")
-	fmt.Fprintln(w, "<script src=\"scroll.js\"></script>")
+
+	///Load the scroll buffer of what's currently happening
+	//fmt.Fprintln(w, "<script src=\"scroll.js\"></script>")
+
 	fmt.Fprintln(w, "</body>")
 	fmt.Fprintln(w, "</html>")
 
@@ -884,7 +889,7 @@ func settingsHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func helpHandler(w http.ResponseWriter, req *http.Request) {
-	fmt.Fprintln(w, "help not implemented yet")
+	fmt.Fprintln(w, "help not presently implemented")
 }
 
 func viewAllHandler(w http.ResponseWriter, req *http.Request) {
@@ -1399,7 +1404,7 @@ func insertRecord(db *sql.DB, dnsserver string, t time.Time, domainname string, 
 		transport = &http.Transport{TLSClientConfig: tlsConfig}
 		client = &http.Client{Transport: transport}
 
-		uniqueId, err = getMachineUUID()
+		uniqueId = getMachineID()
 		if err != nil {
 			log.Fatalf("Error getting machine UUID: %v", err)
 		}
@@ -1411,13 +1416,46 @@ func insertRecord(db *sql.DB, dnsserver string, t time.Time, domainname string, 
 
 }
 
-func getMachineUUID() (string, error) {
-	// UUID v1 uses the MAC address of the machine and the current timestamp
-	id, err := uuid.NewUUID()
-	if err != nil {
-		return "", err
+// /get a unique machine id that will always be the same for the machine
+func getMachineID() string {
+	switch runtime.GOOS {
+	case "linux":
+		// Standard machine-id path for most distros
+		data, err := os.ReadFile("/etc/machine-id")
+		if err != nil {
+			return "default-linux-id"
+		}
+		return strings.TrimSpace(string(data))
+
+	case "windows":
+		// Query the registry for the MachineGuid
+		cmd := exec.Command("reg", "query", "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Cryptography", "/v", "MachineGuid")
+		out, err := cmd.Output()
+		if err != nil {
+			return "default-windows-id"
+		}
+		// Extract the GUID string from the output
+		parts := strings.Fields(string(out))
+		return parts[len(parts)-1]
+
+	case "darwin":
+		// Query I/O Kit for the Platform UUID
+		cmd := exec.Command("ioreg", "-rd1", "-c", "IOPlatformExpertDevice")
+		out, err := cmd.Output()
+		if err != nil {
+			return "default-mac-id"
+		}
+		// Logic to find the UUID string within the output
+		for _, line := range strings.Split(string(out), "\n") {
+			if strings.Contains(line, "IOPlatformUUID") {
+				parts := strings.Split(line, "\"")
+				if len(parts) > 3 {
+					return parts[3]
+				}
+			}
+		}
 	}
-	return id.String(), nil
+	return "fallback-id"
 }
 
 func storeRemoteResult(timestr string, domainname string, domaintype string, dnsserver string, answers string, uniqueId string) {
