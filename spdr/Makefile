@@ -1,12 +1,14 @@
 FILELIST := spdr.windows spdr.linux #spdr.freebsd spdr.netbsd spdr.openbsd spdr.dragonfly
+FLAGS := -ldflags "-s -w"
+
 all: spdr
 
 spdr:
 	cp inputs/update.windows inputs/update.exe
-	GOOS=windows go build -o spdr.windows
+	GOOS=windows go build $(FLAGS) -o spdr.windows
 
 	cp inputs/update.linux inputs/update.exe
-	GOOS=linux   go build -o spdr.linux
+	GOOS=linux   go build $(FLAGS) -o spdr.linux
 
 	#cp inputs/update.darwin inputs/update.exe
 	#GOOS=darwin  go build -o spdr.darwin

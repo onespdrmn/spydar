@@ -3,22 +3,23 @@ package main
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"database/sql"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
-	"database/sql"
-	_ "github.com/go-sql-driver/mysql" // Blank import for the driver
 	"os"
 	"strconv"
 	"unicode"
+
+	_ "github.com/go-sql-driver/mysql" // Blank import for the driver
 )
 
 var mysqlDb *sql.DB
 var dberr error
 
-//initialize database connection
-func init(){
+// initialize database connection
+func init() {
 	dsn := username + ":" + password + "@tcp(127.0.0.1:3306)/production"
 	fmt.Println("Connecting to:", dsn)
 
@@ -31,30 +32,42 @@ func init(){
 
 }
 
-//filter for valid input characters
+// filter for valid input characters
 func isValidInput(t, name, domaintype, dnsserver, answers, uniqueid string) bool {
-	b0 := isValidChars(t) 
-	if b0 == false{ return false }
+	b0 := isValidChars(t)
+	if b0 == false {
+		return false
+	}
 
-	b1 := isValidChars(name) 
-	if b1 == false{ return false }
+	b1 := isValidChars(name)
+	if b1 == false {
+		return false
+	}
 
-	b2 := isValidChars(domaintype) 
-	if b2 == false{ return false }
+	b2 := isValidChars(domaintype)
+	if b2 == false {
+		return false
+	}
 
-	b3 := isValidChars(dnsserver) 
-	if b3 == false{ return false }
+	b3 := isValidChars(dnsserver)
+	if b3 == false {
+		return false
+	}
 
-	b4 := isValidChars(answers) 
-	if b4 == false{ return false }
+	b4 := isValidChars(answers)
+	if b4 == false {
+		return false
+	}
 
-	b5 := isValidChars(uniqueid) 
-	if b5 == false{ return false }
+	b5 := isValidChars(uniqueid)
+	if b5 == false {
+		return false
+	}
 
 	return true
 }
 
-//check each character in the string to see if it is allowed
+// check each character in the string to see if it is allowed
 func isValidChars(str string) bool {
 	for _, char := range str {
 		if isAlphaNumeric(char) == false {
@@ -65,28 +78,28 @@ func isValidChars(str string) bool {
 	return true
 }
 
-//the approved chars are: a-zA-Z0-9,._-
+// the approved chars are: a-zA-Z0-9,._-
 func isAlphaNumeric(r rune) bool {
 	return unicode.IsLetter(r) || unicode.IsDigit(r) || r == '.' || r == '_' || r == ',' || r == '-'
 }
 
 func inputHandler(w http.ResponseWriter, r *http.Request) {
 	//fmt.Println("inputArgs", r.URL.Query())
-	
+
 	query := r.URL.Query()
 
-	t:=query.Get("time")
-	name:=query.Get("name")
-	domaintype:=query.Get("domaintype")
-	dnsserver:=query.Get("dnsserver")
-	answers:=query.Get("answers")
-	uniqueid:=query.Get("uniqueid")
+	t := query.Get("time")
+	name := query.Get("name")
+	domaintype := query.Get("domaintype")
+	dnsserver := query.Get("dnsserver")
+	answers := query.Get("answers")
+	uniqueid := query.Get("uniqueid")
 
 	if isValidInput(t, name, domaintype, dnsserver, answers, uniqueid) == false {
 		log.Println("invalid input detected")
 		return
 	}
-	
+
 	tt, err := strconv.Atoi(t)
 	if err != nil {
 		log.Println("strconv.Atoi:", err)
@@ -100,7 +113,7 @@ func inputHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = statement.Exec(tt, name,domaintype,dnsserver,answers,uniqueid)
+	_, err = statement.Exec(tt, name, domaintype, dnsserver, answers, uniqueid)
 	if err != nil {
 		log.Fatal("statement.Exec", err)
 		return
@@ -144,11 +157,11 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	fs := http.FileServer(http.Dir("./assets"))
+	//fs := http.FileServer(http.Dir("./assets"))
 
 	// StripPrefix ensures the server looks for 'logo.png' in './assets/'
 	// instead of './assets/static/logo.png'
-	mux.Handle("/static/", http.StripPrefix("/static/", fs))
+	//mux.Handle("/static/", http.StripPrefix("/static/", fs))
 
 	// setup the database input handler
 	mux.HandleFunc("/input", inputHandler)
@@ -157,10 +170,9 @@ func main() {
 	server := &http.Server{
 		Addr:      ":443",
 		TLSConfig: tlsConfig,
-		Handler: mux,
+		Handler:   mux,
 	}
 
 	// Listen to HTTPS connections with the server certificate and wait
 	log.Fatal(server.ListenAndServeTLS(server_pub_key, server_pri_key))
 }
-
