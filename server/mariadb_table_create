@@ -1,11 +1,11 @@
 CREATE TABLE measurements (
-    id INT NOT NULL AUTO_INCREMENT,
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     time INT,
     name VARCHAR(255),
     domaintype VARCHAR(10),
     dnsserver VARCHAR(20),
     answers TEXT,
-    PRIMARY KEY (id)
+    uniqueId VARCHAR(64)
 );
 
 

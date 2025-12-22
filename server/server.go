@@ -10,16 +10,20 @@ import (
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql" // Blank import for the driver
 	"os"
+	"strconv"
+	"unicode"
 )
 
-var Db *sql.DB
+var mysqlDb *sql.DB
+var dberr error
 
+//initialize database connection
 func init(){
 	dsn := username + ":" + password + "@tcp(127.0.0.1:3306)/production"
 	fmt.Println("Connecting to:", dsn)
 
-	Db, err := sql.Open("mysql", dsn)
-	if err != nil {
+	mysqlDb, dberr = sql.Open("mysql", dsn)
+	if dberr != nil {
 		log.Fatal("sql.Open failed to mysql")
 	}
 
@@ -27,12 +31,84 @@ func init(){
 
 }
 
+//filter for valid input characters
+func isValidInput(t, name, domaintype, dnsserver, answers, uniqueid string) bool {
+	b0 := isValidChars(t) 
+	if b0 == false{ return false }
+
+	b1 := isValidChars(name) 
+	if b1 == false{ return false }
+
+	b2 := isValidChars(domaintype) 
+	if b2 == false{ return false }
+
+	b3 := isValidChars(dnsserver) 
+	if b3 == false{ return false }
+
+	b4 := isValidChars(answers) 
+	if b4 == false{ return false }
+
+	b5 := isValidChars(uniqueid) 
+	if b5 == false{ return false }
+
+	return true
+}
+
+//check each character in the string to see if it is allowed
+func isValidChars(str string) bool {
+	for _, char := range str {
+		if isAlphaNumeric(char) == false {
+			return false
+		}
+	}
+
+	return true
+}
+
+//the approved chars are: a-zA-Z0-9,._-
+func isAlphaNumeric(r rune) bool {
+	return unicode.IsLetter(r) || unicode.IsDigit(r) || r == '.' || r == '_' || r == ',' || r == '-'
+}
+
 func inputHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("inputHandler", r.URL.Path)
-	fmt.Println("inputArgs", r.URL.Query())
+	//fmt.Println("inputArgs", r.URL.Query())
+	
+	query := r.URL.Query()
+
+	t:=query.Get("time")
+	name:=query.Get("name")
+	domaintype:=query.Get("domaintype")
+	dnsserver:=query.Get("dnsserver")
+	answers:=query.Get("answers")
+	uniqueid:=query.Get("uniqueid")
+
+	if isValidInput(t, name, domaintype, dnsserver, answers, uniqueid) == false {
+		log.Println("invalid input detected")
+		return
+	}
+	
+	tt, err := strconv.Atoi(t)
+	if err != nil {
+		log.Println("strconv.Atoi:", err)
+		return
+	}
+
+	insertStatement := `INSERT INTO measurements (time, name, domaintype, dnsserver, answers, uniqueId) VALUES (?, ?, ?, ?, ?, ?)`
+	statement, err := mysqlDb.Prepare(insertStatement)
+	if err != nil {
+		log.Fatal("db.Prepare:", err)
+		return
+	}
+
+	_, err = statement.Exec(tt, name,domaintype,dnsserver,answers,uniqueid)
+	if err != nil {
+		log.Fatal("statement.Exec", err)
+		return
+	}
 }
 
 func main() {
+
 	fmt.Println("Listening on https://data.spydar.org:443/input/")
 
 	home, err := os.UserHomeDir()
@@ -40,9 +116,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	server_pub_key := home + string(os.PathSeparator) + "keys/server.pub"
+	server_pub_key := home + string(os.PathSeparator) + "keys/server.crt"
 	server_pri_key := home + string(os.PathSeparator) + "keys/server.key"
-	rootca_pub_key := home + string(os.PathSeparator) + "keys/rootCA.pub"
+	rootca_pub_key := home + string(os.PathSeparator) + "keys/rootCA.crt"
 
 	// Create a CA certificate pool
 	caCert, err := ioutil.ReadFile(rootca_pub_key)
@@ -63,6 +139,7 @@ func main() {
 		ClientCAs:    caCertPool,
 		ClientAuth:   tls.RequireAndVerifyClientCert,
 		Certificates: []tls.Certificate{servercert},
+		RootCAs:      caCertPool,
 	}
 
 	// Create a Server instance to listen on port 8443 with the TLS config
