@@ -3,4 +3,4 @@
 keys/*
 keys
 password.go
-server
+server.linux

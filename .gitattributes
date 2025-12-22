@@ -1,0 +1,4 @@
+Makefile text
+*.go text
+*.linux filter=lfs
+*.windows filter=lfs
