@@ -1204,8 +1204,8 @@ func onReady() {
 		var err error
 		//systray.SetTemplateIcon(icon.Data, icon.Data)
 
-		systray.SetTitle("Awesome App")
-		systray.SetTooltip("Pretty awesome")
+		systray.SetTitle("Spydar")
+		systray.SetTooltip("Spydar DNS Measurement Tool")
 		systray.SetIcon(iconBytes)
 		mEnabled := systray.AddMenuItemCheckbox("Enabled", "Enabled", true)
 		systray.AddSeparator()
