@@ -150,15 +150,15 @@ func main() {
 	server_pri_key := home + string(os.PathSeparator) + "keys/server.key"
 	rootca_pub_key := home + string(os.PathSeparator) + "keys/rootCA.crt"
 
-	if *clientAuth {
-		// Create a CA certificate pool
-		caCert, err := ioutil.ReadFile(rootca_pub_key)
-		if err != nil {
-			log.Fatal(err)
-		}
-		caCertPool := x509.NewCertPool()
-		caCertPool.AppendCertsFromPEM(caCert)
+	// Create a CA certificate pool
+	caCert, err := ioutil.ReadFile(rootca_pub_key)
+	if err != nil {
+		log.Fatal(err)
+	}
+	caCertPool := x509.NewCertPool()
+	caCertPool.AppendCertsFromPEM(caCert)
 
+	if *clientAuth {
 		// Get servercert
 		servercert, err := tls.LoadX509KeyPair(server_pub_key, server_pri_key)
 		if err != nil {
@@ -182,6 +182,7 @@ func main() {
 
 		// Create the TLS Config with the CA pool and enable Client certificate validation
 		tlsConfig = &tls.Config{
+			RootCAs:      caCertPool,
 			Certificates: []tls.Certificate{servercert},
 		}
 	}

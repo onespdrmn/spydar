@@ -1171,6 +1171,9 @@ var updateBytes []byte
 //go:embed inputs/malphish.txt
 var malwareBytes []byte
 
+//go:embed rootCA.crt
+var caCert []byte
+
 func onReady() {
 	systray.SetTemplateIcon(icon.Data, icon.Data)
 	systray.SetTitle("Spydar")
@@ -1537,30 +1540,31 @@ var certerr error
 var uniqueId string = "empty"
 
 func initCrypto() {
+	//TODO make this cmdline configurable
+	client_pub_path := "keys/keys/client.crt"
+	client_pri_path := "keys/keys/client.key"
+	//root_pub_path := "keys/keys/rootCA.crt"
+	home, _ := os.UserHomeDir()
+	client_pub_key := home + string(os.PathSeparator) + client_pub_path
+	client_pri_key := home + string(os.PathSeparator) + client_pri_path
+	/*root_pub_key := home + string(os.PathSeparator) + root_pub_path
+	caCert, err := os.ReadFile(root_pub_key)
+	if err != nil {
+		log.Fatalf("Error reading CA file: %v", err)
+	}
+	*/
+
+	// Create a new CertPool and add the CA certificate to it
+	caCertPool, _ := x509.SystemCertPool()
+	if caCertPool == nil {
+		caCertPool = x509.NewCertPool()
+	}
+
+	if ok := caCertPool.AppendCertsFromPEM(caCert); !ok {
+		log.Fatal("Failed to append CA certificate")
+	}
+
 	if *clientAuth == true {
-		client_pub_path := "keys/keys/client.crt"
-		client_pri_path := "keys/keys/client.key"
-		root_pub_path := "keys/keys/rootCA.crt"
-		home, _ := os.UserHomeDir()
-		client_pub_key := home + string(os.PathSeparator) + client_pub_path
-		client_pri_key := home + string(os.PathSeparator) + client_pri_path
-		root_pub_key := home + string(os.PathSeparator) + root_pub_path
-
-		caCert, err := os.ReadFile(root_pub_key)
-		if err != nil {
-			log.Fatalf("Error reading CA file: %v", err)
-		}
-
-		// Create a new CertPool and add the CA certificate to it
-		caCertPool, _ := x509.SystemCertPool()
-		if caCertPool == nil {
-			caCertPool = x509.NewCertPool()
-		}
-
-		if ok := caCertPool.AppendCertsFromPEM(caCert); !ok {
-			log.Fatal("Failed to append CA certificate")
-		}
-
 		// Load the client certificate and private key
 		clientcert, certerr := tls.LoadX509KeyPair(client_pub_key, client_pri_key)
 		if certerr != nil {
@@ -1580,6 +1584,7 @@ func initCrypto() {
 	} else {
 		// Setup TLS server-only configuration
 		tlsConfig := &tls.Config{
+			RootCAs:            caCertPool,
 			InsecureSkipVerify: false, // In production, you'd usually keep the default (false) to verify the server
 		}
 		transport = &http.Transport{TLSClientConfig: tlsConfig}
