@@ -15,8 +15,8 @@ clean:
 	rm -rf build
 
 install:
-	sudo cp build/spdr.linux /usr/bin/
-	sudo cp build/server.linux /usr/bin/spdr-server
+	sudo cp spdr/spdr.linux /usr/bin/
+	sudo cp server/server.linux /usr/bin/spdr-server
 
 deploy: 
 	mkdir -p build
