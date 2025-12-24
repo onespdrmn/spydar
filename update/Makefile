@@ -1,4 +1,4 @@
-FILELIST := update.windows update.linux #update.freebsd update.netbsd update.openbsd update.dragonfly update.darwin 
+FILELIST := update.windows update.linux #update.darwin update.freebsd update.netbsd update.openbsd update.dragonfly
 FLAGS := -ldflags "-s -w"
 
 all: update
