@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"database/sql"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -130,9 +131,15 @@ func inputHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+var clientAuth *bool
+
 func main() {
 
+	var tlsConfig *tls.Config
 	fmt.Println("Listening on https://data.spydar.org:443/input/")
+
+	clientAuth = flag.Bool("clientauth", false, "use client auth for remote server")
+	flag.Parse()
 
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -143,26 +150,40 @@ func main() {
 	server_pri_key := home + string(os.PathSeparator) + "keys/server.key"
 	rootca_pub_key := home + string(os.PathSeparator) + "keys/rootCA.crt"
 
-	// Create a CA certificate pool
-	caCert, err := ioutil.ReadFile(rootca_pub_key)
-	if err != nil {
-		log.Fatal(err)
-	}
-	caCertPool := x509.NewCertPool()
-	caCertPool.AppendCertsFromPEM(caCert)
+	if *clientAuth {
+		// Create a CA certificate pool
+		caCert, err := ioutil.ReadFile(rootca_pub_key)
+		if err != nil {
+			log.Fatal(err)
+		}
+		caCertPool := x509.NewCertPool()
+		caCertPool.AppendCertsFromPEM(caCert)
 
-	// Get servercert
-	servercert, err := tls.LoadX509KeyPair(server_pub_key, server_pri_key)
-	if err != nil {
-		log.Fatal(err)
-	}
+		// Get servercert
+		servercert, err := tls.LoadX509KeyPair(server_pub_key, server_pri_key)
+		if err != nil {
+			log.Fatal(err)
+		}
 
-	// Create the TLS Config with the CA pool and enable Client certificate validation
-	tlsConfig := &tls.Config{
-		ClientCAs:    caCertPool,
-		ClientAuth:   tls.RequireAndVerifyClientCert,
-		Certificates: []tls.Certificate{servercert},
-		RootCAs:      caCertPool,
+		// Create the TLS Config with the CA pool and enable Client certificate validation
+		tlsConfig = &tls.Config{
+			ClientCAs:    caCertPool,
+			ClientAuth:   tls.RequireAndVerifyClientCert,
+			Certificates: []tls.Certificate{servercert},
+			RootCAs:      caCertPool,
+		}
+
+	} else {
+		// Get servercert
+		servercert, err := tls.LoadX509KeyPair(server_pub_key, server_pri_key)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// Create the TLS Config with the CA pool and enable Client certificate validation
+		tlsConfig = &tls.Config{
+			Certificates: []tls.Certificate{servercert},
+		}
 	}
 
 	mux := http.NewServeMux()

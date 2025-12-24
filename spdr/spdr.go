@@ -27,6 +27,7 @@ import (
 
 	"fyne.io/systray"
 	"fyne.io/systray/example/icon"
+	"github.com/beevik/ntp"
 	_ "github.com/mattn/go-sqlite3" // Import the driver
 	"github.com/miekg/dns"
 )
@@ -81,6 +82,12 @@ type listentry struct {
 type dnsentry struct {
 	dnsserver string
 	isalive   bool
+}
+
+type precision struct {
+	domainname string
+	unixtime   int
+	uniqueid   string
 }
 
 var quitChannel1 = make(chan struct{})
@@ -180,6 +187,7 @@ var inputFile *string
 var urlinputFile *string
 var noMeasurement *bool
 var sendRemoteServer *bool
+var clientAuth *bool
 
 // alternate way to specify dns server settings
 var dnsFile *string
@@ -192,6 +200,7 @@ func main() {
 	dnsFile = flag.String("dnsinput", "", "specify the input dns caches to measure")
 	noMeasurement = flag.Bool("nomeasurement", false, "do not perform measurements but start the web application")
 	sendRemoteServer = flag.Bool("server", false, "send results to remote server")
+	clientAuth = flag.Bool("clientauth", false, "use client auth for remote server")
 
 	flag.Parse()
 
@@ -238,7 +247,199 @@ func main() {
 
 	go doUpdateProcess() //automatic code updates
 
+	go doPreciseMeasurements()
+
 	systray.Run(onReady, onExit)
+}
+
+// default file to download for precise measurements
+var precisionFileUrl string = "https://www.spydar.org/precise.txt"
+
+func doPreciseMeasurements() {
+	var preciseMeasurements []byte
+	var err error
+
+	ntpServer := "pool.ntp.org"
+
+	dnsservers, err := getDNSServers()
+	if err != nil {
+		fmt.Println("error getting dns servers:", err)
+		return
+	}
+
+	for {
+		if measureEnabled == true {
+			preciseMeasurements, err = downloadFileToMemory(precisionFileUrl)
+			if err != nil {
+				fmt.Println("error downloading preciseMeasurements:", err)
+				time.Sleep(1 * time.Second)
+				continue
+			}
+
+			mlist, err := measurement2List(string(preciseMeasurements))
+			if err != nil {
+				fmt.Println("error processing measurements:", err)
+				time.Sleep(1 * time.Second)
+				continue
+			}
+
+			// Get the current time from the NTP server
+			// account for machines with wild time settings
+			ntpTime, err := ntp.Time(ntpServer)
+			if err != nil {
+				log.Println("Failed to get time from NTP server: %v", err)
+				time.Sleep(1 * time.Second)
+				continue
+			}
+
+			machineUtcTime := time.Now().UTC()
+			ntpUtcTime := ntpTime.UTC()
+			timeDiff := ntpUtcTime.Sub(machineUtcTime) // Calculate the time difference
+
+			processPreciseMeasurements(dnsservers, mlist, ntpUtcTime, timeDiff)
+
+			preciseMeasurements = nil
+			mlist = nil
+
+			time.Sleep(60 * time.Second) //wait 60 seconds before next iteration
+		}
+
+		///important, don't remove.  prevents for loop from spinning too fast
+		time.Sleep(1 * time.Second)
+	}
+}
+
+// mlist == measurements list
+func processPreciseMeasurements(dnsservers []dnsentry, mlist []precision, currentNtpTime time.Time, timeDiff time.Duration) {
+	var timeResultReceived time.Time
+	var answer *dns.Msg
+	var err error
+
+	//get the local machine id
+	machineid := getMachineID()
+
+	if firstTime == true {
+		firstTime = false
+		fmt.Println("first time, setting machine id:", machineid)
+		initCrypto()
+	}
+
+	//for all items in the measurement list
+	for _, measEntry := range mlist {
+		//for all configured dns caches
+		for _, dnsserver := range dnsservers {
+			t := time.Now()
+			timeResultReceived, answer, err = do_measurement(dnsserver, machineid, measEntry, t, timeDiff)
+			if err != nil {
+				continue
+			}
+
+			timeBegin := strconv.Itoa(int(t.UTC().Unix()))
+			timeEnd := strconv.Itoa(int(timeResultReceived.UTC().Unix()))
+			log_remote(measEntry, answer, timeBegin, timeEnd, dnsserver.dnsserver)
+		}
+	}
+}
+
+func log_remote(measEntry precision, answer *dns.Msg, timeBegin string, timeEnd string, dnsserver string) {
+
+	if uniqueId == "empty" {
+		uniqueId = getMachineID()
+	}
+
+	fmt.Println("logging:", measEntry.domainname, "from", dnsserver, "at", timeBegin, ":", timeEnd)
+	anslist := answer2String(answer)
+	storeRemoteResult(timeBegin, measEntry.domainname, "A", dnsserver, anslist, uniqueId)
+}
+
+func do_measurement(dnsserver dnsentry, machineid string, entry precision, now time.Time, timeDiff time.Duration) (time.Time, *dns.Msg, error) {
+	//add a period if it doesn't exist to make domain fully qualified
+	if entry.domainname[len(entry.domainname)-1] != '.' {
+		entry.domainname += "."
+	}
+
+	domainname := entry.domainname
+	m1 := new(dns.Msg)
+	m1.Id = dns.Id()
+	m1.RecursionDesired = false //this is important
+	m1.Question = make([]dns.Question, 1)
+	m1.Question[0] = dns.Question{domainname, dns.TypeA, dns.ClassINET}
+	c := new(dns.Client)
+
+	/*laddr := net.UDPAddr{ IP:   net.ParseIP("[::1]"), Port: 1234, Zone: "", } */
+
+	c.Dialer = &net.Dialer{
+		Timeout: 750 * time.Millisecond,
+		//LocalAddr: &laddr,
+	}
+
+	in, _, err := c.Exchange(m1, dnsserver.dnsserver+":53")
+	if err != nil {
+		if verbose {
+			fmt.Println("Exchange error 2:", err)
+		}
+		return time.Time{}, in, err
+	}
+
+	if len(in.Answer) > 0 {
+		if verbose {
+			fmt.Println("record exists:", entry.domainname, "in", dnsserver.dnsserver)
+		}
+		now = time.Now().UTC()
+		returnTime := now.Add(timeDiff)
+		return returnTime, in, nil
+	} else {
+		if verbose {
+			fmt.Println("record does not exist:", entry.domainname, "in", dnsserver.dnsserver)
+		}
+		return time.Time{}, in, errors.New("no answer found")
+	}
+}
+
+func measurement2List(measurements string) ([]precision, error) {
+	var list []precision
+	var unixtime int
+	var domainname string
+	var uniqueid string
+
+	//process the lines
+	lines := strings.Split(measurements, "\n")
+	for _, line := range lines {
+		ln := string(line)
+		if len(ln) > 0 {
+			if ln[0:1] == "#" {
+				continue
+			}
+
+			/*
+				//process the line
+				//fmt.Println("DEBUG:", ln)
+					parts := strings.Split(ln, ",")
+						if len(parts) == 2 {
+							unixtime, _ = strconv.Atoi(parts[0])
+							domainname = parts[1]
+							uniqueid = ""
+						} else if len(parts) == 3 {
+							unixtime, _ = strconv.Atoi(parts[0])
+							domainname = parts[1]
+							uniqueid = parts[2]
+						} else {
+							fmt.Println("error processing measurement line:", ln)
+							return nil, errors.New("measurement line didn't have 2 or 3 elements")
+						}
+			*/
+
+			unixtime = 0
+			uniqueid = ""
+			domainname = ln
+			entry := precision{domainname, unixtime, uniqueid}
+
+			list = append(list, entry)
+		}
+	}
+
+	return list, nil
+
 }
 
 func doUpdateProcess() {
@@ -277,6 +478,32 @@ func doUpdateProcess() {
 		os.Exit(0)
 
 	}
+}
+
+// downloadFileToMemory fetches the content from the given URL and returns it as a byte slice.
+func downloadFileToMemory(url string) ([]byte, error) {
+	// Perform the HTTP GET request. The default http.Client handles HTTPS automatically.
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("failed to perform GET request: %w", err)
+	}
+
+	// Defer closing the response body. It is vital to close the body to prevent resource leaks.
+	defer resp.Body.Close()
+
+	// Check if the request was successful (HTTP status code 200 OK).
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("bad status code: %d %s", resp.StatusCode, resp.Status)
+	}
+
+	// Read the entire response body into memory.
+	// For very large files, this could cause memory issues.
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	return body, nil
 }
 
 // downloadFile downloads a file from a given URL and saves it to the specified filepath.
@@ -1282,7 +1509,6 @@ func measure() {
 
 /*
 This function should store results in a database
-consider putting a sqlite database in here
 */
 func storeResults(res DNSResult) {
 	var dnsserver string
@@ -1304,13 +1530,64 @@ func storeResults(res DNSResult) {
 }
 
 var firstTime bool = true
-var client *http.Client
+var httpclient *http.Client
 var transport *http.Transport
 var cert tls.Certificate
 var certerr error
-var uniqueId string = "blank"
+var uniqueId string = "empty"
 
-func insertRecord(db *sql.DB, dnsserver string, t time.Time, domainname string, domaintype string, domaindescr string, answer *dns.Msg) {
+func initCrypto() {
+	if *clientAuth == true {
+		client_pub_path := "keys/keys/client.crt"
+		client_pri_path := "keys/keys/client.key"
+		root_pub_path := "keys/keys/rootCA.crt"
+		home, _ := os.UserHomeDir()
+		client_pub_key := home + string(os.PathSeparator) + client_pub_path
+		client_pri_key := home + string(os.PathSeparator) + client_pri_path
+		root_pub_key := home + string(os.PathSeparator) + root_pub_path
+
+		caCert, err := os.ReadFile(root_pub_key)
+		if err != nil {
+			log.Fatalf("Error reading CA file: %v", err)
+		}
+
+		// Create a new CertPool and add the CA certificate to it
+		caCertPool, _ := x509.SystemCertPool()
+		if caCertPool == nil {
+			caCertPool = x509.NewCertPool()
+		}
+
+		if ok := caCertPool.AppendCertsFromPEM(caCert); !ok {
+			log.Fatal("Failed to append CA certificate")
+		}
+
+		// Load the client certificate and private key
+		clientcert, certerr := tls.LoadX509KeyPair(client_pub_key, client_pri_key)
+		if certerr != nil {
+			log.Fatalln(certerr.Error())
+		}
+
+		// Setup TLS configuration
+		tlsConfig := &tls.Config{
+			RootCAs:            caCertPool,
+			Certificates:       []tls.Certificate{clientcert},
+			InsecureSkipVerify: false, // In production, you'd usually keep the default (false) to verify the server
+		}
+
+		// Create a custom transport and client
+		transport = &http.Transport{TLSClientConfig: tlsConfig}
+		httpclient = &http.Client{Transport: transport}
+	} else {
+		// Setup TLS server-only configuration
+		tlsConfig := &tls.Config{
+			InsecureSkipVerify: false, // In production, you'd usually keep the default (false) to verify the server
+		}
+		transport = &http.Transport{TLSClientConfig: tlsConfig}
+		httpclient = &http.Client{Transport: transport}
+	}
+}
+
+func answer2String(answer *dns.Msg) string {
 	var anslist []string
 	//print results to console
 	for x := 0; x < len(answer.Answer); x++ {
@@ -1320,7 +1597,6 @@ func insertRecord(db *sql.DB, dnsserver string, t time.Time, domainname string, 
 
 		answersplit := strings.Split(answer, "\t")
 
-		//HACK HACK
 		appendme := answersplit[4]
 		//appendme := strings.Join(answersplit, ",")
 
@@ -1334,6 +1610,15 @@ func insertRecord(db *sql.DB, dnsserver string, t time.Time, domainname string, 
 	}
 
 	answers := strings.Join(anslist, ",")
+
+	return answers
+
+}
+
+func insertRecord(db *sql.DB, dnsserver string, t time.Time, domainname string, domaintype string, domaindescr string, answer *dns.Msg) {
+	var answers string
+
+	answers = answer2String(answer)
 
 	log.Println("Inserting answer measurements:", answers)
 
@@ -1368,46 +1653,7 @@ func insertRecord(db *sql.DB, dnsserver string, t time.Time, domainname string, 
 	if firstTime && *sendRemoteServer {
 		firstTime = false
 
-		client_pub_path := "keys/keys/client.crt"
-		client_pri_path := "keys/keys/client.key"
-		root_pub_path := "keys/keys/rootCA.crt"
-		home, _ := os.UserHomeDir()
-		client_pub_key := home + string(os.PathSeparator) + client_pub_path
-		client_pri_key := home + string(os.PathSeparator) + client_pri_path
-		root_pub_key := home + string(os.PathSeparator) + root_pub_path
-
-		caCert, err := os.ReadFile(root_pub_key)
-		if err != nil {
-			log.Fatalf("Error reading CA file: %v", err)
-		}
-
-		// Create a new CertPool and add the CA certificate to it
-		caCertPool, _ := x509.SystemCertPool()
-		if caCertPool == nil {
-			caCertPool = x509.NewCertPool()
-		}
-
-		if ok := caCertPool.AppendCertsFromPEM(caCert); !ok {
-			log.Fatal("Failed to append CA certificate")
-		}
-
-		//initialize crypto
-		// Load the client certificate and private key
-		clientcert, certerr := tls.LoadX509KeyPair(client_pub_key, client_pri_key)
-		if certerr != nil {
-			log.Fatalln(certerr.Error())
-		}
-
-		// Setup TLS configuration
-		tlsConfig := &tls.Config{
-			RootCAs:            caCertPool,
-			Certificates:       []tls.Certificate{clientcert},
-			InsecureSkipVerify: false, // In production, you'd usually keep the default (false) to verify the server
-		}
-
-		// Create a custom transport and client
-		transport = &http.Transport{TLSClientConfig: tlsConfig}
-		client = &http.Client{Transport: transport}
+		initCrypto()
 
 		uniqueId = getMachineID()
 		if err != nil {
@@ -1465,7 +1711,7 @@ func getMachineID() string {
 
 func storeRemoteResult(timestr string, domainname string, domaintype string, dnsserver string, answers string, uniqueId string) {
 
-	if client == nil {
+	if httpclient == nil {
 		return
 	}
 
@@ -1487,9 +1733,9 @@ func storeRemoteResult(timestr string, domainname string, domaintype string, dns
 
 	// Execute the request
 	// fmt.Println("Sending data to remote server:", u.String())
-	resp, err := client.Get(u.String())
+	resp, err := httpclient.Get(u.String())
 	if err != nil {
-		fmt.Println("client.Get error:", err)
+		fmt.Println("httpclient.Get error:", err)
 		return
 	}
 	defer resp.Body.Close()
@@ -1502,13 +1748,6 @@ func storeRemoteResult(timestr string, domainname string, domaintype string, dns
 	}
 
 	//return string(body), nil
-}
-
-// TODO
-func getUniqueId() string {
-
-	return "adlifjajdflajsdfj1234"
-
 }
 
 func parseDNSFile(dnsdata string) ([]dnsentry, error) {

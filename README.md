@@ -22,7 +22,7 @@ go version go1.24.9 linux/amd64
 
 `make` <br>
 <br>
-`make install` <br>
+`sudo make install` <br>
 <br>
 If on Linux run:<br>
 `spdr.linux`<br>
