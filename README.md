@@ -25,9 +25,10 @@ go version go1.24.9 linux/amd64
 `sudo make install` <br>
 <br>
 If on Linux run:<br>
-`spdr.linux`<br>
-
+`spdr.linux`
 <br>
+<br>
+
 # Usage
 When the program starts, there will be a icon that appears in your system tray.  It has a small spider icon. Click this icon and choose 'Status'.  This will pull up
 your default web browser and you will be able to click through the application to learn about the web sites in the measurement list. 
