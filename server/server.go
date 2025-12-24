@@ -158,13 +158,13 @@ func main() {
 	caCertPool := x509.NewCertPool()
 	caCertPool.AppendCertsFromPEM(caCert)
 
-	if *clientAuth {
-		// Get servercert
-		servercert, err := tls.LoadX509KeyPair(server_pub_key, server_pri_key)
-		if err != nil {
-			log.Fatal(err)
-		}
+	/// Get servercert
+	servercert, err := tls.LoadX509KeyPair(server_pub_key, server_pri_key)
+	if err != nil {
+		log.Fatal(err)
+	}
 
+	if *clientAuth {
 		// Create the TLS Config with the CA pool and enable Client certificate validation
 		tlsConfig = &tls.Config{
 			ClientCAs:    caCertPool,
@@ -174,12 +174,6 @@ func main() {
 		}
 
 	} else {
-		// Get servercert
-		servercert, err := tls.LoadX509KeyPair(server_pub_key, server_pri_key)
-		if err != nil {
-			log.Fatal(err)
-		}
-
 		// Create the TLS Config with the CA pool and enable Client certificate validation
 		tlsConfig = &tls.Config{
 			RootCAs:      caCertPool,
