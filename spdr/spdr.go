@@ -347,7 +347,7 @@ func log_remote(measEntry precision, answer *dns.Msg, timeBegin string, timeEnd 
 		uniqueId = getMachineID()
 	}
 
-	fmt.Println("logging:", measEntry.domainname, "from", dnsserver, "at", timeBegin, ":", timeEnd)
+	fmt.Println("precision logging:", measEntry.domainname, "from", dnsserver, "at", timeBegin, ":", timeEnd)
 	anslist := answer2String(answer)
 	storeRemoteResult(timeBegin, measEntry.domainname, "A", dnsserver, anslist, uniqueId)
 }
