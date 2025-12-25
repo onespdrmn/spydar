@@ -27,3 +27,4 @@ deploy:
 	cp spdr/spdr.windows build
 	cp update/update.linux build
 	cp update/update.windows build
+	git add build/*
