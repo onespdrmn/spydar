@@ -1266,6 +1266,15 @@ func viewAllHandler(w http.ResponseWriter, req *http.Request) {
 		}
 		_ = name2
 		answers = strings.ReplaceAll(answers, ",", ";")
+
+		timestampInt, err := strconv.ParseInt(timestamp, 10, 64)
+		if err != nil {
+			log.Fatal("timestamp parse error:", err)
+		}
+
+		t := time.Unix(timestampInt, 0)
+		timestamp = t.String()
+
 		rows += fmt.Sprintf("%v,%v,%v,%v,%v,%v,%v\n", id, timestamp, name, domaintype, dnsserver, description, answers)
 		//fmt.Println(count, id, timestamp, name)
 		count++
