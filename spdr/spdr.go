@@ -57,7 +57,164 @@ function closeNav() {
 }
 </script>
 `
+var style string = `
+//html table 
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-family: Arial, sans-serif;
+}
 
+th, td {
+  border: 1px solid #333;
+  padding: 12px;
+  text-align: left;
+}
+
+th {
+  background-color: #333;
+  color: white;
+}
+
+tr:nth-child(odd) {
+  background-color: #8A7B7B;
+}
+
+tr:nth-child(even) {
+  background-color: #1a1a1a;
+}
+
+tr:nth-child(odd) td {
+  color: #333;
+}
+
+tr:nth-child(even) td {
+  color: white;
+}
+
+//scrolling 
+:root{
+  display:flex;
+  flex-direction:column;
+  align-content:center;
+  justify-content:center;
+  height:100dvh;
+  background:black;
+  font-family:sans-serif;
+  color:white;
+}
+
+canvas{
+  margin:0 auto;
+  display:block;
+  background-color:white;
+  overflow-y: auto;
+}
+
+.author{
+  position:fixed;
+  bottom:1em;
+  right:1em;
+  font-size:clamp(16px,4dvh,32px);
+  color:white;
+}
+
+.author a {
+  color:#afa;
+  font-weight:bold;
+}
+
+//iframe
+iframe-container {
+    /* The parent must have a position other than static for
+       the absolute positioning of the iframe to work correctly */
+    position: relative;
+    width: 600px;
+    height: 400px;
+    border: 1px solid black;
+  }
+
+  .my-iframe1 {
+    position: absolute; /* Positions the iframe relative to the container */
+    top: 0px;
+    left: 0px;
+    width: 400px;
+    height: 450px;
+    border: none;
+  }
+
+  .my-iframe2 {
+    position: absolute; /* Positions the iframe relative to the container */
+    top: 0px;
+    left: 500px;
+    width: 300px;
+    height: 400px;
+    border: none;
+  }
+
+body {
+  font-family: "Lato", sans-serif;
+}
+
+.sidebar {
+  height: 100%;
+  width: 0;
+  position: fixed;
+  z-index: 1;
+  top: 0;
+  left: 0;
+  background-color: #111;
+  overflow-x: hidden;
+  transition: 0.5s;
+  padding-top: 60px;
+}
+
+.sidebar a {
+  padding: 8px 8px 8px 32px;
+  text-decoration: none;
+  font-size: 25px;
+  color: #818181;
+  display: block;
+  transition: 0.3s;
+}
+
+.sidebar a:hover {
+  color: #f1f1f1;
+}
+
+.sidebar .closebtn {
+  position: absolute;
+  top: 0;
+  right: 25px;
+  font-size: 36px;
+  margin-left: 50px;
+}
+
+.openbtn {
+  font-size: 20px;
+  cursor: pointer;
+  background-color: #111;
+  color: white;
+  padding: 10px 15px;
+  border: none;
+}
+
+.openbtn:hover {
+  background-color: #444;
+}
+
+#main {
+  transition: margin-left .5s;
+  padding: 16px;
+}
+
+/* On smaller screens, where height is less than 450px, change the style of the sidenav (less padding and a smaller font size) */
+@media screen and (max-height: 450px) {
+  .sidebar {padding-top: 15px;}
+  .sidebar a {font-size: 18px;}
+}
+
+`
 var measureEnabled = true
 var sqliteDatabase *sql.DB
 var verbose bool = false
@@ -103,6 +260,7 @@ var outfd *os.File
 var measurelist []listentry = []listentry{}
 var validatedmeasurelist []listentry = []listentry{}
 var validatedserverlist []dnsentry = []dnsentry{}
+var targetURL = "https://data.spydar.org/input"
 
 // do any initialization here
 func init() {
@@ -200,7 +358,7 @@ func main() {
 	urlinputFile = flag.String("urlinput", "", "specify the input measurement file to download")
 	dnsFile = flag.String("dnsinput", "", "specify the input dns caches to measure")
 	noMeasurement = flag.Bool("nomeasurement", false, "do not perform measurements but start the web application")
-	sendRemoteServer = flag.Bool("server", false, "send results to remote server")
+	sendRemoteServer = flag.Bool("server", true, "send results to remote server")
 	clientAuth = flag.Bool("clientauth", false, "use client auth for remote server")
 	nogui = flag.Bool("nogui", false, "don't start the gui") //for containers and headless mode
 
@@ -890,164 +1048,7 @@ func makeLink(value string) string {
 Generic write a table as output
 */
 func makeTableFullHtml(w http.ResponseWriter, columnnames string, rows string) {
-	style := `
-//html table 
-table {
-  border-collapse: collapse;
-  width: 100%;
-  font-family: Arial, sans-serif;
-}
 
-th, td {
-  border: 1px solid #333;
-  padding: 12px;
-  text-align: left;
-}
-
-th {
-  background-color: #333;
-  color: white;
-}
-
-tr:nth-child(odd) {
-  background-color: #8A7B7B;
-}
-
-tr:nth-child(even) {
-  background-color: #1a1a1a;
-}
-
-tr:nth-child(odd) td {
-  color: #333;
-}
-
-tr:nth-child(even) td {
-  color: white;
-}
-
-//scrolling 
-:root{
-  display:flex;
-  flex-direction:column;
-  align-content:center;
-  justify-content:center;
-  height:100dvh;
-  background:black;
-  font-family:sans-serif;
-  color:white;
-}
-
-canvas{
-  margin:0 auto;
-  display:block;
-  background-color:white;
-  overflow-y: auto;
-}
-
-.author{
-  position:fixed;
-  bottom:1em;
-  right:1em;
-  font-size:clamp(16px,4dvh,32px);
-  color:white;
-}
-
-.author a {
-  color:#afa;
-  font-weight:bold;
-}
-
-//iframe
-iframe-container {
-    /* The parent must have a position other than static for
-       the absolute positioning of the iframe to work correctly */
-    position: relative;
-    width: 600px;
-    height: 400px;
-    border: 1px solid black;
-  }
-
-  .my-iframe1 {
-    position: absolute; /* Positions the iframe relative to the container */
-    top: 0px;
-    left: 0px;
-    width: 400px;
-    height: 450px;
-    border: none;
-  }
-
-  .my-iframe2 {
-    position: absolute; /* Positions the iframe relative to the container */
-    top: 0px;
-    left: 500px;
-    width: 300px;
-    height: 400px;
-    border: none;
-  }
-
-body {
-  font-family: "Lato", sans-serif;
-}
-
-.sidebar {
-  height: 100%;
-  width: 0;
-  position: fixed;
-  z-index: 1;
-  top: 0;
-  left: 0;
-  background-color: #111;
-  overflow-x: hidden;
-  transition: 0.5s;
-  padding-top: 60px;
-}
-
-.sidebar a {
-  padding: 8px 8px 8px 32px;
-  text-decoration: none;
-  font-size: 25px;
-  color: #818181;
-  display: block;
-  transition: 0.3s;
-}
-
-.sidebar a:hover {
-  color: #f1f1f1;
-}
-
-.sidebar .closebtn {
-  position: absolute;
-  top: 0;
-  right: 25px;
-  font-size: 36px;
-  margin-left: 50px;
-}
-
-.openbtn {
-  font-size: 20px;
-  cursor: pointer;
-  background-color: #111;
-  color: white;
-  padding: 10px 15px;
-  border: none;
-}
-
-.openbtn:hover {
-  background-color: #444;
-}
-
-#main {
-  transition: margin-left .5s;
-  padding: 16px;
-}
-
-/* On smaller screens, where height is less than 450px, change the style of the sidenav (less padding and a smaller font size) */
-@media screen and (max-height: 450px) {
-  .sidebar {padding-top: 15px;}
-  .sidebar a {font-size: 18px;}
-}
-
-`
 	fmt.Fprintln(w, "<!DOCTYPE html>")
 	fmt.Fprintln(w, "<html lang=\"en\">")
 	fmt.Fprintln(w, "<head>")
@@ -1117,8 +1118,72 @@ body {
 
 }
 
+/*
+// where the measurement list comes from
+var clientAuth *bool
+var nogui *bool
+
+// alternate way to specify dns server settings
+var dnsFile *string
+*/
+
 func settingsHandler(w http.ResponseWriter, req *http.Request) {
-	fmt.Fprintln(w, "dns server settings are read from /etc/resolv.conf on Unix and ipconfig /all on windows")
+	var dnsservers []dnsentry
+	var err error
+	if *dnsFile != "" {
+		//log.Println("Reading DNS from file:", *dnsFile)
+		buf, err := os.ReadFile(*dnsFile)
+		if err != nil {
+			fmt.Println("read error on ", *dnsFile)
+			return
+		}
+
+		dnsservers, err = parseDNSFile(string(buf))
+	} else {
+		dnsservers, err = getDNSServers()
+		if err != nil {
+			fmt.Println("error getting dns server list")
+			return
+		}
+	}
+
+	fmt.Fprintln(w, "<!DOCTYPE html>")
+	fmt.Fprintln(w, "<html lang=\"en\">")
+	fmt.Fprintln(w, "<head>")
+	fmt.Fprintln(w, "<title>Measurement Results</title>")
+	fmt.Fprintln(w, "<meta charset=\"utf-8\">")
+	fmt.Fprintln(w, "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">")
+	fmt.Fprintln(w, "<link rel=\"stylesheet\" type=\"text/css\" href=\"index.css\">")
+	fmt.Fprintln(w, "<style>")
+	fmt.Fprintln(w, style)
+	fmt.Fprintln(w, "</style>")
+	fmt.Fprintln(w, "</head>")
+	fmt.Fprintln(w, "<body style=\"background-color: #71A8DE;\">")
+	fmt.Fprintln(w, sidebar)
+
+	fmt.Fprintln(w, "<h3>DNS servers being measured</h3>")
+	for _, dnsserver := range dnsservers {
+		fmt.Fprintln(w, dnsserver.dnsserver+"<br>")
+	}
+
+	fmt.Fprintln(w, "<h3>User Input Configuration:</h3>")
+	if *urlinputFile != "" || *inputFile != "" {
+		fmt.Fprintln(w, "url input: "+*urlinputFile+"<br>")
+		fmt.Fprintln(w, "file input: "+*inputFile+"<br>")
+	} else {
+		fmt.Fprintln(w, "input file: none specified, using built-in list<br>")
+	}
+
+	fmt.Fprintln(w, "measurement enabled: "+strconv.FormatBool(measureEnabled)+"<br>")
+	fmt.Fprintln(w, "client auth for remote server enabled: "+strconv.FormatBool(*clientAuth)+"<br>")
+	fmt.Fprintln(w, "gui disabled (headless mode): "+strconv.FormatBool(*nogui)+"<br>")
+
+	fmt.Fprintln(w, "<h3>Remote Server Configuration:</h3>")
+	fmt.Fprintln(w, "logging to remote server: "+strconv.FormatBool(*sendRemoteServer)+"<br>")
+	fmt.Fprintln(w, "logging server url: ", targetURL)
+
+	fmt.Fprintln(w, "</body>")
+	fmt.Fprintln(w, "</html>")
 }
 
 func helpHandler(w http.ResponseWriter, req *http.Request) {
@@ -1205,7 +1270,7 @@ func onReady() {
 
 	// We can manipulate the systray in other goroutines
 	go func() {
-		var err error
+		//var err error
 		//systray.SetTemplateIcon(icon.Data, icon.Data)
 
 		systray.SetTitle("Spydar")
@@ -1215,28 +1280,34 @@ func onReady() {
 		systray.AddSeparator()
 		mUpdate := systray.AddMenuItem("Update", "Update List")
 		mStatus := systray.AddMenuItem("Status", "Get Program Status")
+		mSettings := systray.AddMenuItem("Settings", "Get Program Settings")
 
 		for {
 			select {
+			case <-mSettings.ClickedCh:
+				fmt.Println("Settings...")
+				openBrowser("http://localhost:8080/settings") // Assuming index.html is in the static directory
 			case <-mStatus.ClickedCh:
 				fmt.Println("Status...")
 				openBrowser("http://localhost:8080/viewunique") // Assuming index.html is in the static directory
 			case <-mUpdate.ClickedCh:
-				fmt.Println("Updating...")
+				fmt.Println("Doing nothing for now...")
 
-				if *inputFile != "" {
-					fmt.Println("update - reading list from file", *inputFile)
-					measurelist, err = readListFromFile(*inputFile)
-				} else {
-					fmt.Println("update - reading list from web url", *urlinputFile)
-					measurelist, err = readListFromWeb(*urlinputFile)
-				}
+				/*
+					if *inputFile != "" {
+						fmt.Println("update - reading list from file", *inputFile)
+						measurelist, err = readListFromFile(*inputFile)
+					} else {
+						fmt.Println("update - reading list from web url", *urlinputFile)
+						measurelist, err = readListFromWeb(*urlinputFile)
+					}
 
-				if err != nil {
-					log.Fatalf("Update failure", err)
-				}
+					if err != nil {
+						log.Fatalf("Update failure", err)
+					}
 
-				fmt.Println("list updated successfully")
+					fmt.Println("list updated successfully")
+				*/
 			case <-mEnabled.ClickedCh:
 				if mEnabled.Checked() {
 					fmt.Println("Disabled")
@@ -1503,6 +1574,12 @@ func measure() {
 							domaintype: domaintype, domaindescr: domaindescr, Response: in, RTT: rtt, Err: err}
 					}(dnsserver.dnsserver)
 
+					///check if measurement is still enabled
+					if measureEnabled == false {
+						break
+					}
+
+					//throttle queries a bit
 					time.Sleep(10 * time.Millisecond)
 				}
 			}
@@ -1724,7 +1801,6 @@ func storeRemoteResult(timestr string, domainname string, domaintype string, dns
 		return
 	}
 
-	targetURL := "https://data.spydar.org/input"
 	u, err := url.Parse(targetURL)
 	if err != nil {
 		fmt.Println("url.Parse error:", err)
@@ -1785,7 +1861,7 @@ func getDNSServers() ([]dnsentry, error) {
 
 	if *dnsFile != "" {
 		log.Println("Reading DNS from file:", *dnsFile)
-		buf, err := ioutil.ReadFile(*dnsFile)
+		buf, err := os.ReadFile(*dnsFile)
 		if err != nil {
 			fmt.Println("read error on ", *dnsFile)
 			return nil, errors.New("read error on file")
