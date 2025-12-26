@@ -188,6 +188,7 @@ var urlinputFile *string
 var noMeasurement *bool
 var sendRemoteServer *bool
 var clientAuth *bool
+var nogui *bool
 
 // alternate way to specify dns server settings
 var dnsFile *string
@@ -201,6 +202,7 @@ func main() {
 	noMeasurement = flag.Bool("nomeasurement", false, "do not perform measurements but start the web application")
 	sendRemoteServer = flag.Bool("server", false, "send results to remote server")
 	clientAuth = flag.Bool("clientauth", false, "use client auth for remote server")
+	nogui = flag.Bool("nogui", false, "don't start the gui") //for containers and headless mode
 
 	flag.Parse()
 
@@ -249,7 +251,11 @@ func main() {
 
 	go doPreciseMeasurements()
 
-	systray.Run(onReady, onExit)
+	if *nogui == true {
+		measure()
+	} else {
+		systray.Run(onReady, onExit)
+	}
 }
 
 // default file to download for precise measurements
@@ -316,11 +322,13 @@ func processPreciseMeasurements(dnsservers []dnsentry, mlist []precision, curren
 	var err error
 
 	//get the local machine id
-	machineid := getMachineID()
+	if uniqueId == "empty" {
+		uniqueId = getMachineID()
+	}
 
 	if firstTime == true {
 		firstTime = false
-		fmt.Println("first time, setting machine id:", machineid)
+		fmt.Println("first time, setting machine id:", uniqueId)
 		initCrypto()
 	}
 
@@ -329,27 +337,23 @@ func processPreciseMeasurements(dnsservers []dnsentry, mlist []precision, curren
 		//for all configured dns caches
 		for _, dnsserver := range dnsservers {
 			t := time.Now()
-			timeResultReceived, answer, err = do_measurement(dnsserver, machineid, measEntry, t, timeDiff)
+			timeResultReceived, answer, err = do_measurement(dnsserver, uniqueId, measEntry, t, timeDiff)
 			if err != nil {
 				continue
 			}
 
 			timeBegin := strconv.Itoa(int(t.UTC().Unix()))
 			timeEnd := strconv.Itoa(int(timeResultReceived.UTC().Unix()))
-			log_remote(measEntry, answer, timeBegin, timeEnd, dnsserver.dnsserver)
+			log_remote(measEntry, answer, timeBegin, timeEnd, dnsserver.dnsserver, uniqueId)
 		}
 	}
 }
 
-func log_remote(measEntry precision, answer *dns.Msg, timeBegin string, timeEnd string, dnsserver string) {
-
-	if uniqueId == "empty" {
-		uniqueId = getMachineID()
-	}
+func log_remote(measEntry precision, answer *dns.Msg, timeBegin string, timeEnd string, dnsserver string, measureid string) {
 
 	fmt.Println("precision logging:", measEntry.domainname, "from", dnsserver, "at", timeBegin, ":", timeEnd)
 	anslist := answer2String(answer)
-	storeRemoteResult(timeBegin, measEntry.domainname, "A", dnsserver, anslist, uniqueId)
+	storeRemoteResult(timeBegin, measEntry.domainname, "A", dnsserver, anslist, measureid)
 }
 
 func do_measurement(dnsserver dnsentry, machineid string, entry precision, now time.Time, timeDiff time.Duration) (time.Time, *dns.Msg, error) {
@@ -1714,7 +1718,7 @@ func getMachineID() string {
 	return "fallback-id"
 }
 
-func storeRemoteResult(timestr string, domainname string, domaintype string, dnsserver string, answers string, uniqueId string) {
+func storeRemoteResult(timestr string, domainname string, domaintype string, dnsserver string, answers string, measureid string) {
 
 	if httpclient == nil {
 		return
@@ -1733,7 +1737,7 @@ func storeRemoteResult(timestr string, domainname string, domaintype string, dns
 	q.Set("domaintype", domaintype)
 	q.Set("dnsserver", dnsserver)
 	q.Set("answers", answers)
-	q.Set("uniqueid", uniqueId)
+	q.Set("uniqueid", measureid)
 	u.RawQuery = q.Encode()
 
 	// Execute the request
