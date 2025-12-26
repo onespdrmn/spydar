@@ -11,62 +11,85 @@ import (
 
 func main() {
 	var orig_exename string = ""
+	var count int = 0
+	var failed bool = false
 
-	url := "https://github.com/onespdrmn/spydar/releases/download/release-0.81/spdr." + runtime.GOOS
-	prepend := ""
-
-	if runtime.GOOS != "windows" {
-		prepend = "./"
-	}
-
-	var exename string = "spdr."
-	exename = prepend + exename + runtime.GOOS
-
-	time.Sleep(4 * time.Second)
-
-	///download the new version
-	err := downloadFile(exename+".new", url)
-	if err != nil {
-		fmt.Println("download update failed:", url, err)
-		return
-	}
-
-	//remove old exename
-	os.Remove(exename)
-	fmt.Println("removed:", exename)
-
-	//rename it from exename.new to exename
-	os.Rename(exename+".new", exename)
-	fmt.Println("renamed:", exename+".new", exename)
-
-	if runtime.GOOS != "windows" {
-		err = os.Chmod(exename, 0755)
-		if err != nil {
-			fmt.Printf("Error chmod file: %v\n", err)
-			return
+	for {
+		//we try 5 times to update
+		if count > 4 {
+			failed = true
+			break
 		}
+
+		url := "https://github.com/onespdrmn/spydar/releases/download/latest/spdr." + runtime.GOOS
+		prepend := ""
+
+		if runtime.GOOS != "windows" {
+			prepend = "./"
+		}
+
+		var exename string = "spdr."
+		exename = prepend + exename + runtime.GOOS
+
+		time.Sleep(4 * time.Second)
+
+		///download the new version
+		err := downloadFile(exename+".new", url)
+		if err != nil {
+			fmt.Println("download update failed:", url, err)
+			time.Sleep(60 * time.Second)
+			count++
+			continue
+		}
+
+		//remove old exename
+		os.Remove(exename)
+		fmt.Println("removed:", exename)
+
+		//rename it from exename.new to exename
+		os.Rename(exename+".new", exename)
+		fmt.Println("renamed:", exename+".new", exename)
+
+		if runtime.GOOS != "windows" {
+			err = os.Chmod(exename, 0755)
+			if err != nil {
+				fmt.Printf("Error chmod file: %v\n", err)
+				time.Sleep(60 * time.Second)
+				count++
+				continue
+			}
+		}
+
+		if runtime.GOOS == "windows" {
+			//make it an exe on windows
+			orig_exename = exename
+			exename = exename + ".exe"
+			os.Rename(orig_exename, exename)
+		}
+
+		//execute the program with the same args it had when it was first started
+		var attr os.ProcAttr
+		attr.Files = []*os.File{os.Stdin, os.Stdout, os.Stderr} // Inherit standard I/O from the parent process
+		attr.Dir = ""                                           // Use the current working directory
+
+		// Start the process
+		_, err = os.StartProcess(exename, os.Args[1:], &attr)
+		if err != nil {
+			fmt.Printf("Failed to start new executable: %v\n", err)
+			time.Sleep(60 * time.Second)
+			count++
+			continue
+		}
+
+		//break out of loop on first successful update
+		break
 	}
 
-	if runtime.GOOS == "windows" {
-		//make it an exe on windows
-		orig_exename = exename
-		exename = exename + ".exe"
-		os.Rename(orig_exename, exename)
+	if failed {
+		fmt.Println("failed to update")
+	} else {
+		fmt.Println("finished updating successfully")
 	}
-
-	//execute the program with the same args it had when it was first started
-	var attr os.ProcAttr
-	attr.Files = []*os.File{os.Stdin, os.Stdout, os.Stderr} // Inherit standard I/O from the parent process
-	attr.Dir = ""                                           // Use the current working directory
-
-	// Start the process
-	_, err = os.StartProcess(exename, os.Args[1:], &attr)
-	if err != nil {
-		fmt.Printf("Failed to start process: %v\n", err)
-		return
-	}
-
-	return
 
 }
 
