@@ -369,8 +369,8 @@ func main() {
 	http.HandleFunc("/viewunique", viewUniqueHandler)
 	http.HandleFunc("/settings", settingsHandler)
 	http.HandleFunc("/help", helpHandler)
-	fileHandler := http.FileServer(http.Dir("inputs")) // Serve static files from  "inputs" directory
-	http.Handle("/in", fileHandler)
+	//fileHandler := http.FileServer(http.Dir("inputs")) // Serve static files from  "inputs" directory
+	//http.Handle("/in", fileHandler)
 	http.HandleFunc("/", indexHandler)
 
 	// Start the server in a goroutine
