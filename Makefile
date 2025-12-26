@@ -18,7 +18,8 @@ install:
 	sudo cp spdr/spdr.linux /usr/bin/
 	sudo cp server/server.linux /usr/bin/spdr-server
 
-deploy: 
+release: 
+	git checkout main
 	mkdir -p build
 	git lfs track "*.linux"
 	git lfs track "*.windows"
