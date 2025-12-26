@@ -12,7 +12,7 @@ import (
 func main() {
 	var orig_exename string = ""
 
-	url := "https://github.com/onespdrmn/spydar/releases/download/release-0.8/spdr." + runtime.GOOS
+	url := "https://github.com/onespdrmn/spydar/releases/download/release-0.9/spdr." + runtime.GOOS
 	prepend := ""
 
 	if runtime.GOOS != "windows" {
