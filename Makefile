@@ -1,5 +1,6 @@
 KEY:=$(HOME)/keys/data.spydar.org.pem
 SERVER:=ec2-user@18.221.243.83
+VERSION:=$(shell cat VERSION)
 
 all: doit #deploy
 
@@ -18,7 +19,7 @@ install:
 	sudo cp spdr/spdr.linux /usr/bin/
 	sudo cp server/server.linux /usr/bin/spdr-server
 
-release: 
+buildrelease: 
 	git checkout main
 	mkdir -p build
 	make clean all 
@@ -30,3 +31,9 @@ release:
 	cp update/update.linux build
 	cp update/update.windows build
 	git add build/*
+	git commit -m $(VERSION)
+	git tag -a $(VERSION)
+
+pushrelease:
+	git push --tags
+
