@@ -54,23 +54,23 @@ jobs:
       #         provenance for.
       #
       # ========================================================
-      - name: Generate subject for provenance
-        id: hash
-        run: |
-          set -euo pipefail
+      #- name: Generate subject for provenance
+      #  id: hash
+      #  run: |
+      #    set -euo pipefail
 
           # List the artifacts the provenance will refer to.
-          files=$(ls artifact*)
+      #    files=$(ls artifact*)
           # Generate the subjects (base64 encoded).
-          echo "hashes=$(sha256sum $files | base64 -w0)" >> "${GITHUB_OUTPUT}"
+      #    echo "hashes=$(sha256sum $files | base64 -w0)" >> "${GITHUB_OUTPUT}"
 
-  provenance:
-    needs: [build]
-    permissions:
-      actions: read   # To read the workflow path.
-      id-token: write # To sign the provenance.
-      contents: write # To add assets to a release.
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.4.0
-    with:
-      base64-subjects: "${{ needs.build.outputs.digests }}"
-      upload-assets: true # Optional: Upload to a new release
+  #provenance:
+  #  needs: [build]
+  #  permissions:
+  #    actions: read   # To read the workflow path.
+  #    id-token: write # To sign the provenance.
+  #    contents: write # To add assets to a release.
+  #  uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.4.0
+  #  with:
+  #    base64-subjects: "${{ needs.build.outputs.digests }}"
+  #    upload-assets: true # Optional: Upload to a new release
