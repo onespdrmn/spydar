@@ -364,13 +364,14 @@ func main() {
 
 	flag.Parse()
 
+	//http.HandleFunc("/scrollbuffer", scrollHandler)
 	http.HandleFunc("/viewall", viewAllHandler)
 	http.HandleFunc("/viewunique", viewUniqueHandler)
-	//http.HandleFunc("/scrollbuffer", scrollHandler)
 	http.HandleFunc("/settings", settingsHandler)
 	http.HandleFunc("/help", helpHandler)
 	fileHandler := http.FileServer(http.Dir("inputs")) // Serve static files from  "inputs" directory
-	http.Handle("/", fileHandler)
+	http.Handle("/in", fileHandler)
+	http.HandleFunc("/", indexHandler)
 
 	// Start the server in a goroutine
 	go func() {
@@ -1043,6 +1044,29 @@ func makeLink(value string) string {
 
 	return link
 }
+func indexHandler(w http.ResponseWriter, req *http.Request) {
+
+	fmt.Fprintln(w, "<!DOCTYPE html>")
+	fmt.Fprintln(w, "<html lang=\"en\">")
+	fmt.Fprintln(w, "<head>")
+	fmt.Fprintln(w, "<title>Measurement Results</title>")
+	fmt.Fprintln(w, "<meta charset=\"utf-8\">")
+	fmt.Fprintln(w, "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">")
+	fmt.Fprintln(w, "<link rel=\"stylesheet\" type=\"text/css\" href=\"index.css\">")
+	fmt.Fprintln(w, "<style>")
+	fmt.Fprintln(w, style)
+	fmt.Fprintln(w, "</style>")
+	fmt.Fprintln(w, "</head>")
+	fmt.Fprintln(w, "<body style=\"background-color: #71A8DE;\">")
+	fmt.Fprintln(w, sidebar)
+
+	fmt.Fprintln(w, "<h3> Welcome to SPYDAR DNS Measurement Tool</h3>")
+	fmt.Fprintln(w, "<p>This tool measures DNS caches for domain resolution behavior.  Use the sidebar to navigate through the results.</p>")
+	fmt.Fprintln(w, "<p>For help, click <a href=\"/help\">here</a>.</p>")
+
+	fmt.Fprintln(w, "</body>")
+	fmt.Fprintln(w, "</html>")
+}
 
 /*
 Generic write a table as output
@@ -1187,7 +1211,27 @@ func settingsHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func helpHandler(w http.ResponseWriter, req *http.Request) {
-	fmt.Fprintln(w, "help not presently implemented")
+
+	fmt.Fprintln(w, "<!DOCTYPE html>")
+	fmt.Fprintln(w, "<html lang=\"en\">")
+	fmt.Fprintln(w, "<head>")
+	fmt.Fprintln(w, "<title>Measurement Results</title>")
+	fmt.Fprintln(w, "<meta charset=\"utf-8\">")
+	fmt.Fprintln(w, "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">")
+	fmt.Fprintln(w, "<link rel=\"stylesheet\" type=\"text/css\" href=\"index.css\">")
+	fmt.Fprintln(w, "<style>")
+	fmt.Fprintln(w, style)
+	fmt.Fprintln(w, "</style>")
+	fmt.Fprintln(w, "</head>")
+	fmt.Fprintln(w, "<body style=\"background-color: #71A8DE;\">")
+	fmt.Fprintln(w, sidebar)
+
+	fmt.Fprintln(w, "<h3> Welcome to SPYDAR DNS Measurement Tool Help</h3>")
+	fmt.Fprintln(w, "<p>This tool measures DNS caches for malware domain resolution behavior.  Use the sidebar to navigate through the results.</p>")
+	fmt.Fprintln(w, "<p>More help will be coming later.</a>.</p>")
+
+	fmt.Fprintln(w, "</body>")
+	fmt.Fprintln(w, "</html>")
 }
 
 func viewAllHandler(w http.ResponseWriter, req *http.Request) {
