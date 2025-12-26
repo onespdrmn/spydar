@@ -25,11 +25,11 @@ buildrelease:
 	make clean all 
 	git lfs track "*.linux"
 	git lfs track "*.windows"
-	cp server/server.linux build
-	cp spdr/spdr.linux build
-	cp spdr/spdr.windows build
-	cp update/update.linux build
-	cp update/update.windows build
+	cp server/server.linux build/
+	cp spdr/spdr.linux build/
+	cp spdr/spdr.windows build/
+	cp update/update.linux build/
+	cp update/update.windows build/
 	git add build/*
 	git commit -m $(VERSION)
 	git tag -a $(VERSION)
