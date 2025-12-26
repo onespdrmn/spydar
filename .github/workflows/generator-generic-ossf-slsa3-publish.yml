@@ -35,7 +35,7 @@ jobs:
         run: |
             # These are some amazing artifacts.
             echo "installing dependencies"
-            sudo apt install build-essentials golang-go
+            sudo apt install build-essential golang-go
             echo "cloning" >> artifact
             git clone https://github.com/onespdrmn/spydar.git
             echo "cloned successfully" >> artifact
