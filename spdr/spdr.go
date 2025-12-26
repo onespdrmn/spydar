@@ -617,7 +617,7 @@ func doUpdateProcess() {
 	}
 
 	for {
-		fmt.Println("update sleeping N")
+		fmt.Println("update will happen in 24 hours")
 		time.Sleep(60 * 60 * 24 * time.Second) //update once every 24 hours for the update
 
 		os.WriteFile(localFilePath, updateBytes, 0755)

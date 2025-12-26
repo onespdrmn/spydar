@@ -29,9 +29,11 @@ func main() {
 		return
 	}
 
+	//remove old exename
 	os.Remove(exename)
 	fmt.Println("removed:", exename)
 
+	//rename it from exename.new to exename
 	os.Rename(exename+".new", exename)
 	fmt.Println("renamed:", exename+".new", exename)
 
@@ -41,6 +43,13 @@ func main() {
 			fmt.Printf("Error chmod file: %v\n", err)
 			return
 		}
+	}
+
+	if runtime.GOOS == "windows" {
+		//make it an exe on windows
+		orig_exename = exename
+		exename = exename + ".exe"
+		os.Rename(orig_exename, exename)
 	}
 
 	//execute the program with the same args it had when it was first started

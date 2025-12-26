@@ -21,6 +21,7 @@ install:
 release: 
 	git checkout main
 	mkdir -p build
+	make clean all 
 	git lfs track "*.linux"
 	git lfs track "*.windows"
 	cp server/server.linux build
