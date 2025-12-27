@@ -140,7 +140,7 @@ func inputHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	insertStatement := `INSERT INTO measurements (time, name, domaintype, dnsserver, answers, uniqueId, nmessagetype) VALUES (?, ?, ?, ?, ?, ?, ?)`
+	insertStatement := `INSERT INTO measurements (time, name, domaintype, dnsserver, answers, uniqueId, messageId) VALUES (?, ?, ?, ?, ?, ?, ?)`
 	statement, err := mysqlDb.Prepare(insertStatement)
 	if err != nil {
 		log.Fatal("db.Prepare:", err)
