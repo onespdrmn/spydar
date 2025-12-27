@@ -51,6 +51,7 @@ func isValidInput(t, name, domaintype, dnsserver, answers, uniqueid, messagetype
 	}
 
 	if nmessagetype < 0 || nmessagetype > 100 {
+		fmt.Println("invalid messagetype:", nmessagetype)
 		return false
 	}
 
