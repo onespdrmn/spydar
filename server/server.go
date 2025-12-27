@@ -57,31 +57,37 @@ func isValidInput(t, name, domaintype, dnsserver, answers, uniqueid, messagetype
 
 	b0 := isValidChars(t)
 	if b0 == false {
+		fmt.Println("invalid time:", t)
 		return false
 	}
 
 	b1 := isValidChars(name)
 	if b1 == false {
+		fmt.Println("Invalid name:", name)
 		return false
 	}
 
 	b2 := isValidChars(domaintype)
 	if b2 == false {
+		fmt.Println("Invalid domaintype:", domaintype)
 		return false
 	}
 
 	b3 := isValidChars(dnsserver)
 	if b3 == false {
+		fmt.Println("Invalid dnsserver:", dnsserver)
 		return false
 	}
 
 	b4 := isValidChars(answers)
 	if b4 == false {
+		fmt.Println("Invalid answers:", answers)
 		return false
 	}
 
 	b5 := isValidChars(uniqueid)
 	if b5 == false {
+		fmt.Println("Invalid uniqueid:", uniqueid)
 		return false
 	}
 
