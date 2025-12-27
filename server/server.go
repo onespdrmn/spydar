@@ -134,14 +134,20 @@ func inputHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	insertStatement := `INSERT INTO measurements (time, name, domaintype, dnsserver, answers, uniqueId) VALUES (?, ?, ?, ?, ?, ?)`
+	nmessagetype, err := strconv.Atoi(messagetype)
+	if err != nil {
+		log.Println("strconv.Atoi:", err)
+		return
+	}
+
+	insertStatement := `INSERT INTO measurements (time, name, domaintype, dnsserver, answers, uniqueId, nmessagetype) VALUES (?, ?, ?, ?, ?, ?, ?)`
 	statement, err := mysqlDb.Prepare(insertStatement)
 	if err != nil {
 		log.Fatal("db.Prepare:", err)
 		return
 	}
 
-	_, err = statement.Exec(tt, name, domaintype, dnsserver, answers, uniqueid)
+	_, err = statement.Exec(tt, name, domaintype, dnsserver, answers, uniqueid, nmessagetype)
 	if err != nil {
 		log.Fatal("statement.Exec", err)
 		return
