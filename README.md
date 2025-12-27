@@ -13,7 +13,7 @@ by updating /etc/resolv.conf or using the -dnsinput <file> option on spydar.  By
 for measurement.  This program is not IPv6 compatible at the present time (future work).  It will skip over IPv6 dns caches.  All DNS names in 'malphish.txt'
 that are found in the cache are logged to sqlite-database.db in the directory where you started spydar.
 
-It can also update itself to add new features later.  This feature is not currently enabled.
+It can also update itself to add new features later.  This feature is currently enabled.
 
 # Compile
 To compile this program you need a modern Linux computer with at least:<br>
