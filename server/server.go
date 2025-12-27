@@ -44,7 +44,16 @@ func init() {
 }
 
 // filter for valid input characters
-func isValidInput(t, name, domaintype, dnsserver, answers, uniqueid string) bool {
+func isValidInput(t, name, domaintype, dnsserver, answers, uniqueid, messagetype string) bool {
+	nmessagetype, err := strconv.Atoi(messagetype)
+	if err != nil {
+		return false
+	}
+
+	if nmessagetype < 0 || nmessagetype > 100 {
+		return false
+	}
+
 	b0 := isValidChars(t)
 	if b0 == false {
 		return false
@@ -105,8 +114,9 @@ func inputHandler(w http.ResponseWriter, r *http.Request) {
 	dnsserver := query.Get("dnsserver")
 	answers := query.Get("answers")
 	uniqueid := query.Get("uniqueid")
+	messagetype := query.Get("messagetype")
 
-	if isValidInput(t, name, domaintype, dnsserver, answers, uniqueid) == false {
+	if isValidInput(t, name, domaintype, dnsserver, answers, uniqueid, messagetype) == false {
 		log.Println("invalid input detected")
 		return
 	}

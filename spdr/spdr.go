@@ -512,7 +512,7 @@ func log_remote(measEntry precision, answer *dns.Msg, timeBegin string, timeEnd 
 
 	fmt.Println("precision logging:", measEntry.domainname, "from", dnsserver, "at", timeBegin, ":", timeEnd)
 	anslist := answer2String(answer)
-	storeRemoteResult(timeBegin, measEntry.domainname, "A", dnsserver, anslist, measureid)
+	storeRemoteResult(timeBegin, measEntry.domainname, "A", dnsserver, anslist, measureid, 1)
 }
 
 func do_measurement(dnsserver dnsentry, machineid string, entry precision, now time.Time, timeDiff time.Duration) (time.Time, *dns.Msg, error) {
@@ -1799,9 +1799,9 @@ func insertRecord(db *sql.DB, dnsserver string, t time.Time, domainname string, 
 			log.Fatalf("Error getting machine UUID: %v", err)
 		}
 
-		storeRemoteResult(timestr, domainname, domaintype, dnsserver, answers, uniqueId)
+		storeRemoteResult(timestr, domainname, domaintype, dnsserver, answers, uniqueId, 0)
 	} else {
-		storeRemoteResult(timestr, domainname, domaintype, dnsserver, answers, uniqueId)
+		storeRemoteResult(timestr, domainname, domaintype, dnsserver, answers, uniqueId, 0)
 	}
 
 }
@@ -1848,7 +1848,7 @@ func getMachineID() string {
 	return "fallback-id"
 }
 
-func storeRemoteResult(timestr string, domainname string, domaintype string, dnsserver string, answers string, measureid string) {
+func storeRemoteResult(timestr string, domainname string, domaintype string, dnsserver string, answers string, measureid string, messagetype int) {
 
 	if httpclient == nil {
 		return
@@ -1867,6 +1867,7 @@ func storeRemoteResult(timestr string, domainname string, domaintype string, dns
 	q.Set("dnsserver", dnsserver)
 	q.Set("answers", answers)
 	q.Set("uniqueid", measureid)
+	q.Set("messagetype", strconv.Itoa(messagetype))
 	u.RawQuery = q.Encode()
 
 	// Execute the request

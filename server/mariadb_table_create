@@ -5,7 +5,8 @@ CREATE TABLE measurements (
     domaintype VARCHAR(10),
     dnsserver VARCHAR(20),
     answers TEXT,
-    uniqueId VARCHAR(64)
+    uniqueId VARCHAR(64),
+    messageId INT,
 );
 
 
