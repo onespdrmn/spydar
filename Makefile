@@ -20,6 +20,7 @@ install:
 
 buildrelease: 
 	git push --delete origin latest
+	git push --tags
 	git checkout main
 	make clean all 
 	mkdir -p build
