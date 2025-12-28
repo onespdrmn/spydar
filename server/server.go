@@ -155,6 +155,7 @@ func inputHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 var clientAuth *bool
+var listenon *string
 
 func main() {
 
@@ -162,6 +163,8 @@ func main() {
 	fmt.Println("Listening on https://data.spydar.org:443/input/")
 
 	clientAuth = flag.Bool("clientauth", false, "use client auth for remote server")
+	listenon = flag.String("listen", ":443", "specify ip:port or :port for address to listen on")
+
 	flag.Parse()
 
 	home, err := os.UserHomeDir()
@@ -217,7 +220,8 @@ func main() {
 
 	// Create a Server instance to listen on port 8443 with the TLS config
 	server := &http.Server{
-		Addr:      ":443",
+		//Addr:      ":443",
+		Addr:      *listenon,
 		TLSConfig: tlsConfig,
 		Handler:   mux,
 	}

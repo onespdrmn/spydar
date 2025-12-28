@@ -1,8 +1,8 @@
-KEY:=$(HOME)/keys/data.spydar.org.pem
-SERVER:=ec2-user@18.221.243.83
 VERSION:=$(shell cat VERSION)
 
-all: doit #deploy
+#git push --delete origin latest
+
+all: doit
 
 doit:
 	make -C update
