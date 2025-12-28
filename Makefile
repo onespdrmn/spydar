@@ -1,6 +1,5 @@
 VERSION:=$(shell cat VERSION)
 
-#git push --delete origin latest
 
 all: doit
 
@@ -20,6 +19,7 @@ install:
 	sudo cp server/server.linux /usr/bin/spdr-server
 
 buildrelease: 
+	#git push --delete origin latest
 	git checkout main
 	make clean all 
 	mkdir -p build
