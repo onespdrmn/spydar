@@ -254,23 +254,18 @@ var result2Chan = make(chan DNSResult)
 
 // considering use of: https://malware-filter.gitlab.io/malware-filter/urlhaus-filter-hosts-online.txt
 // right now looking for specific NS records but could also look for A records
-// var measurelist []string = []string{"google.com.", "0.beer.", "0.club", "0.fashion"}
 var outfd *os.File
 
 var measurelist []listentry = []listentry{}
 var validatedmeasurelist []listentry = []listentry{}
 var validatedserverlist []dnsentry = []dnsentry{}
-var targetURL = "https://data.spydar.org/input"
+var targetURL string = "https://data.spydar.org/input"
+var databaseFile string = "./sqlite-database.db"
 
 // do any initialization here
-func init() {
+func initdb() {
 	var err error
 	var fileCreated bool = false
-	databaseFile := "./sqlite-database.db"
-	//outFile := "output.csv"
-	//log.Println("Removing:", databaseFile)
-	//os.Remove(databaseFile)
-	//os.Remove(outFile)
 	log.Println("Creating:", databaseFile)
 
 	//if the file doesn't exist, create it
@@ -347,6 +342,9 @@ var noMeasurement *bool
 var sendRemoteServer *bool
 var clientAuth *bool
 var nogui *bool
+var serverurl *string
+var dbfile *string
+var update *bool
 
 // alternate way to specify dns server settings
 var dnsFile *string
@@ -354,15 +352,28 @@ var dnsFile *string
 func main() {
 	var err error
 
-	inputFile = flag.String("fileinput", "", "specify the input measurement file")
-	urlinputFile = flag.String("urlinput", "", "specify the input measurement file to download")
-	dnsFile = flag.String("dnsinput", "", "specify the input dns caches to measure")
+	inputFile = flag.String("fileinput", "", "specify the input measurement file (defaults to embedded list)")
+	urlinputFile = flag.String("urlinput", "", "specify the input measurement file to download (defaults to embedded list)")
+	dnsFile = flag.String("dnsinput", "", "provide file name of input dns caches to measure (defaults to /etc/resolve.conf or system equivalent)")
 	noMeasurement = flag.Bool("nomeasurement", false, "do not perform measurements but start the web application")
 	sendRemoteServer = flag.Bool("server", true, "send results to remote server")
-	clientAuth = flag.Bool("clientauth", false, "use client auth for remote server")
+	clientAuth = flag.Bool("clientauth", false, "use client auth for remote server (experimental)")
 	nogui = flag.Bool("nogui", false, "don't start the gui") //for containers and headless mode
+	serverurl = flag.String("serverurl", "https://data.spydar.org", "remote server url")
+	dbfile = flag.String("dbfile", "./sqlite-database.db", "sqlite database file location")
+	update = flag.Bool("update", true, "turn on/off automatic updates")
 
 	flag.Parse()
+
+	if *serverurl != "" {
+		targetURL = *serverurl + "/input"
+	}
+
+	if *dbfile != "" {
+		databaseFile = *dbfile
+	}
+
+	initdb() //initialize the database
 
 	//http.HandleFunc("/scrollbuffer", scrollHandler)
 	http.HandleFunc("/viewall", viewAllHandler)
@@ -406,7 +417,12 @@ func main() {
 		fmt.Println("Exit at", now.String())
 	}
 
-	go doUpdateProcess() //automatic code updates
+	if *update == false {
+		fmt.Println("automatic updates disabled")
+	} else {
+		fmt.Println("automatic updates enabled")
+		go doUpdateProcess() //automatic code updates
+	}
 
 	go doPreciseMeasurements()
 
