@@ -20,7 +20,8 @@ To compile this program you need a modern Linux computer with at least:<br>
 go version go1.24.9 linux/amd64
 <br><br>
 
-`sudo apt install golang-go build-essential mingw-w64`
+`sudo apt update
+sudo apt install golang-go build-essential`
 <br>
 
 `make` <br>

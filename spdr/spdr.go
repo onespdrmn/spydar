@@ -1890,6 +1890,7 @@ func storeRemoteResult(timestr string, domainname string, domaintype string, dns
 	// fmt.Println("Sending data to remote server:", u.String())
 	resp, err := httpclient.Get(u.String())
 	if err != nil {
+		initCrypto()
 		fmt.Println("httpclient.Get error:", err)
 		return
 	}
@@ -1898,6 +1899,7 @@ func storeRemoteResult(timestr string, domainname string, domaintype string, dns
 	// 6. Read the response
 	_, err = io.ReadAll(resp.Body)
 	if err != nil {
+		initCrypto()
 		fmt.Println("io.ReadAll error:", err)
 		return
 	}
@@ -1956,8 +1958,8 @@ func getDNSServers() ([]dnsentry, error) {
 	}
 
 	if len(list) == 0 {
-		fmt.Println("fatal - parseDNSFile returned zero dns servers, expecting at least one value")
-		os.Exit(-1)
+		//fmt.Println("fatal - parseDNSFile returned zero dns servers, expecting at least one value")
+		return nil, errors.New("no dns servers found")
 	}
 
 	return list, err
