@@ -1,4 +1,4 @@
-![Spydar](spdr/static/spydar.jpg)
+![Spydar](spydar/static/spydar.jpg)
 
 # Summary
 The Spydar program (radar detection of spyware) measures dns records in dns caches by setting the recursion desired (RD) bit to zero in dns requests. 
