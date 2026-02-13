@@ -3,7 +3,7 @@ FLAGS := -ldflags "-s -w"
 all: server
 
 server:
-	GOOS=linux go build $(FLAGS) -o server.linux
+	GOOS=linux go build $(FLAGS) -o spydar-server.linux
 
 clean:
-	rm -f server
+	rm -f spydar-server.linux

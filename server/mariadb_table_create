@@ -1,5 +1,6 @@
 CREATE TABLE measurements (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    ipaddress JSON,
     time INT,
     name VARCHAR(255),
     domaintype VARCHAR(10),

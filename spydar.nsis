@@ -1,0 +1,72 @@
+; --- General Installer Attributes ---
+Name "Spydar" ; The name of the application
+OutFile "spydar_setup.exe" ; The name of the generated installer file
+InstallDir "$PROGRAMFILES\Spydar" ; Default installation directory
+RequestExecutionLevel admin ; Request administrator privileges on Windows Vista and later
+CRCCheck on ; Enable integrity checking of the installer data
+
+;Define the custom text for the welcome page
+!define MUI_TEXT_WELCOME_INFO_TITLE "Spydar Application Installer"
+!define MUI_TEXT_WELCOME_INFO_TEXT "Your custom text goes here. You can include line breaks using $\n."
+
+; --- Pages (UI) ---
+; Use the Modern UI (MUI) for a professional look
+!include x64.nsh
+!include MUI2.nsh
+!insertmacro MUI_PAGE_WELCOME
+!insertmacro MUI_PAGE_DIRECTORY
+!insertmacro MUI_PAGE_INSTFILES
+!insertmacro MUI_PAGE_FINISH
+
+!insertmacro MUI_LANGUAGE "English"
+
+; --- Main Installation Section ---
+Section "Install Files"
+${If} ${RunningX64}
+  DetailPrint "Running on a 64-bit system."
+  SetOutPath $INSTDIR ; Set the output directory to the installation directory
+
+  ; Place all your application files here. 
+  ; The "File" command copies a file from the script's directory to the output path.
+  File "spydar/inputs/spydar.exe" 
+  ;File "license.txt" ; Example of another file
+
+  ; Write the uninstaller to the installation directory
+  WriteUninstaller "$INSTDIR\Uninstall.exe"
+
+  ; Write uninstall information to the Windows Registry for "Add or Remove Programs"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Spydar" "DisplayName" "Spydar"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Spydar" "UninstallString" '"$INSTDIR\Uninstall.exe"'
+
+  ; Create a Start Menu shortcut
+  CreateDirectory "$SMPROGRAMS\Spydar"
+  CreateShortcut "$SMPROGRAMS\Spydar\Spydar.lnk" "$INSTDIR\spydar.exe"
+  CreateShortcut "$SMPROGRAMS\Spydar\Uninstall.lnk" "$INSTDIR\Uninstall.exe"
+${Else}
+  DetailPrint "Running on a 32-bit system.  Nsis doing nothing."
+${EndIf}
+
+SectionEnd
+
+; --- Uninstallation Section ---
+Section "Uninstall"
+  ; Delete the application files
+  Delete "$INSTDIR\spydar.exe"
+  ;Delete "$INSTDIR\license.txt"
+
+  ; Remove the Start Menu shortcuts and directory
+  Delete "$SMPROGRAMS\Spydar\Spydar.lnk"
+  Delete "$SMPROGRAMS\Spydar\Uninstall.lnk"
+  RMDir "$SMPROGRAMS\Spydar" ; Remove the directory if empty
+
+  ; Remove the uninstaller itself (must be the last thing to run)
+  Delete "$INSTDIR\Uninstall.exe"
+
+  ; Remove the application's registry entries
+  DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Spydar"
+  ;DeleteRegKey HKLM "Software\MyCompany\Spydar" ; If you added custom keys
+
+  ; Optional: remove the installation directory if it is empty
+  RMDir "$INSTDIR"
+SectionEnd
+

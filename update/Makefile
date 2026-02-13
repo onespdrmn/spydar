@@ -12,9 +12,9 @@ update:
 ifeq ($(OS), Darwin)
 	echo "You are on macos"
 	GOOS=darwin     go build $(FLAGS) -o update.darwin
-	cp $(FILELIST2) ../spdr/inputs/
+	cp $(FILELIST2) ../spydar/inputs/
 else
-	cp $(FILELIST) ../spdr/inputs/
+	cp $(FILELIST) ../spydar/inputs/
 endif
 
 

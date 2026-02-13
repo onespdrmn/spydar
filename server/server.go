@@ -4,10 +4,13 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"database/sql"
+	"encoding/binary"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"strconv"
@@ -128,6 +131,41 @@ func inputHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	remoteAddr := r.RemoteAddr
+
+	// Split the host (IP) and port
+	ip, _, err := net.SplitHostPort(remoteAddr)
+	if err != nil {
+		// Handle the error if the format is invalid
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		log.Printf("Error splitting host/port: %v\n", err)
+		return
+	}
+
+	ipstring := net.ParseIP(ip)
+	if ipstring == nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		log.Printf("Error parsing IP address: %v\n", ip)
+		return
+	}
+
+	ipstr := ipstring.To4()
+	if ipstr == nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		log.Printf("Error converting IP to IPv4: %v\n", ip)
+		return
+	}
+
+	ipInt := binary.BigEndian.Uint32(ipstr)
+
+	ipIntArray := [4]int32{int32(ipInt), 0, 0, 0}
+
+	ipJson, err := json.Marshal(ipIntArray)
+	if err != nil {
+		log.Printf("Error converting to JSON\n")
+		return
+	}
+
 	tt, err := strconv.Atoi(t)
 	if err != nil {
 		log.Println("strconv.Atoi:", err)
@@ -140,14 +178,14 @@ func inputHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	insertStatement := `INSERT INTO measurements (time, name, domaintype, dnsserver, answers, uniqueId, messageId) VALUES (?, ?, ?, ?, ?, ?, ?)`
+	insertStatement := `INSERT INTO measurements (ipaddress, time, name, domaintype, dnsserver, answers, uniqueId, messageId) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
 	statement, err := mysqlDb.Prepare(insertStatement)
 	if err != nil {
 		log.Fatal("db.Prepare:", err)
 		return
 	}
 
-	_, err = statement.Exec(tt, name, domaintype, dnsserver, answers, uniqueid, nmessagetype)
+	_, err = statement.Exec(ipJson, tt, name, domaintype, dnsserver, answers, uniqueid, nmessagetype)
 	if err != nil {
 		log.Fatal("statement.Exec", err)
 		return

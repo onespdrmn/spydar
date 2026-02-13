@@ -268,6 +268,13 @@ func initdb() {
 	var fileCreated bool = false
 	log.Println("Creating:", databaseFile)
 
+	if runtime.GOOS == "windows" {
+		databasePath := os.Getenv("PROGRAMDATA")
+		os.MkdirAll(databasePath+"\\spydar", 0755)
+		databasePath = databasePath + "\\spydar\\"
+		databaseFile = databasePath + databaseFile
+	}
+
 	//if the file doesn't exist, create it
 	_, err = os.Stat(databaseFile)
 	if err != nil {
@@ -420,8 +427,8 @@ func main() {
 	if *update == false {
 		fmt.Println("automatic updates disabled")
 	} else {
-		fmt.Println("automatic updates enabled")
-		go doUpdateProcess() //automatic code updates
+		//fmt.Println("automatic updates enabled")
+		//go doUpdateProcess() //automatic code updates
 	}
 
 	go doPreciseMeasurements()
@@ -1347,7 +1354,7 @@ func onReady() {
 		systray.SetIcon(iconBytes)
 		mEnabled := systray.AddMenuItemCheckbox("Enabled", "Enabled", true)
 		systray.AddSeparator()
-		mUpdate := systray.AddMenuItem("Update", "Update List")
+		//mUpdate := systray.AddMenuItem("Update", "Update List")
 		mStatus := systray.AddMenuItem("Status", "Get Program Status")
 		mSettings := systray.AddMenuItem("Settings", "Get Program Settings")
 
@@ -1359,8 +1366,10 @@ func onReady() {
 			case <-mStatus.ClickedCh:
 				fmt.Println("Status...")
 				openBrowser("http://localhost:8080/viewunique") // Assuming index.html is in the static directory
-			case <-mUpdate.ClickedCh:
-				fmt.Println("Doing nothing for now...")
+				/*
+					case <-mUpdate.ClickedCh:
+						fmt.Println("Doing nothing for now...")
+				*/
 
 				/*
 					if *inputFile != "" {
@@ -1890,6 +1899,7 @@ func storeRemoteResult(timestr string, domainname string, domaintype string, dns
 	// fmt.Println("Sending data to remote server:", u.String())
 	resp, err := httpclient.Get(u.String())
 	if err != nil {
+		initCrypto()
 		fmt.Println("httpclient.Get error:", err)
 		return
 	}
@@ -1898,6 +1908,7 @@ func storeRemoteResult(timestr string, domainname string, domaintype string, dns
 	// 6. Read the response
 	_, err = io.ReadAll(resp.Body)
 	if err != nil {
+		initCrypto()
 		fmt.Println("io.ReadAll error:", err)
 		return
 	}
@@ -1956,8 +1967,8 @@ func getDNSServers() ([]dnsentry, error) {
 	}
 
 	if len(list) == 0 {
-		fmt.Println("fatal - parseDNSFile returned zero dns servers, expecting at least one value")
-		os.Exit(-1)
+		//fmt.Println("fatal - parseDNSFile returned zero dns servers, expecting at least one value")
+		return nil, errors.New("no dns servers found")
 	}
 
 	return list, err

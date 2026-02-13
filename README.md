@@ -20,15 +20,24 @@ To compile this program you need a modern Linux computer with at least:<br>
 go version go1.24.9 linux/amd64
 <br><br>
 
-`sudo apt install golang-go build-essential mingw-w64`
+# Standard build
+`sudo apt update
+sudo apt install golang-go build-essential nsis mingw-w64
+go install github.com/akavel/rsrc@latest
+export PATH=$PATH:$HOME/go/bin/
+`
+
+# Additional packages for developers (tested on kali linux)
+`sudo apt install dpkg-dev dh-make fakeroot devscripts rpm rpm-build`
 <br>
 
+# Standard build
 `make` <br>
 <br>
 `sudo make install` <br>
 <br>
 If on Linux run:<br>
-`spdr.linux`
+`spydar.linux`
 <br>
 <br>
 
@@ -41,3 +50,9 @@ The spydar application (spdr.linux or spdr.windows) has a -help option.  You can
 # Suggestions
 Suggestions for improvement are welcome.
 
+
+# for development
+sudo make debclean #clean out deb build files
+make clean         #clean out build files
+sudo dpkg --add-architecture i386 && sudo apt-get update 
+sudo apt-get install wine32:i386
