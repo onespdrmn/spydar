@@ -35,7 +35,7 @@ jobs:
         run: |
             # These are some amazing artifacts.
             echo "installing dependencies"
-            sudo apt install build-essential golang-go
+            sudo apt install build-essential golang-go mingw-w64 nsis
             echo "cloning" >> artifact
             rm -rf spydar
             git clone https://github.com/onespdrmn/spydar.git
@@ -43,6 +43,8 @@ jobs:
             cd spydar
             git checkout dev
             echo "checked out dev" >> artifact
+            go install github.com/akavel/rsrc@latest
+            export PATH=$PATH:$HOME/go/bin
             make clean all
             echo "built code" >> artifact
             
