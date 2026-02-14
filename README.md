@@ -35,7 +35,7 @@ If on Linux run:
 `spydar.linux`
 <br>
 If on Windows run: <br>
-`mv spydar/spydar.windows spydar.exe`
+`mv spydar/spydar.windows spydar.exe`<br>
 `spydar.exe`
 <br>
 <br>
