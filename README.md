@@ -13,31 +13,30 @@ by updating /etc/resolv.conf or using the -dnsinput <file> option on spydar.  By
 for measurement.  This program is not IPv6 compatible at the present time (future work).  It will skip over IPv6 dns caches.  All DNS names in 'malphish.txt'
 that are found in the cache are logged to sqlite-database.db in the directory where you started spydar.
 
-It can also update itself to add new features later.  This feature is currently enabled.
+It has support for updating itself to add new features.  This feature is currently disabled.
 
-# Compile
+# Packages required to compile
 To compile this program you need a modern Linux computer with at least:<br>
-go version go1.24.9 linux/amd64
+go version go1.24.9 linux/amd64<br><br>
+`sudo apt update` <br>
+`sudo apt install golang-go build-essential nsis mingw-w64` <br>
+`go install github.com/akavel/rsrc@latest` <br>
+`export PATH=$PATH:$HOME/go/bin/`<br>
+
+<br>
+
+# Compile instructions
+`make` 
 <br><br>
-
-# Standard build
-`sudo apt update
-sudo apt install golang-go build-essential nsis mingw-w64
-go install github.com/akavel/rsrc@latest
-export PATH=$PATH:$HOME/go/bin/
-`
-
-# Additional packages for developers (tested on kali linux)
-`sudo apt install dpkg-dev dh-make fakeroot devscripts rpm rpm-build`
+`sudo make install` 
+<br><br>
+If on Linux run:
 <br>
-
-# Standard build
-`make` <br>
-<br>
-`sudo make install` <br>
-<br>
-If on Linux run:<br>
 `spydar.linux`
+<br>
+If on Windows run: <br>
+`mv spydar/spydar.windows spydar.exe`
+`spydar.exe`
 <br>
 <br>
 
@@ -45,14 +44,22 @@ If on Linux run:<br>
 When the program starts, there will be a icon that appears in your system tray.  It has a small spider icon. Click this icon and choose 'Status'.  This will pull up
 your default web browser and you will be able to click through the application to learn about the web sites in the measurement list. 
 
-The spydar application (spdr.linux or spdr.windows) has a -help option.  You can use this option to override default dns settings and web site lists.
+The spydar application (spydar.linux or spydar.windows) has a -help option.  You can use this option to override default dns settings and web site lists.
+
+For spydar.windows to work, rename spydar.windows to spydar.exe or use the nsis installer.
+
+# Commands to clean all built objects 
+sudo make debclean #clean out deb build files<br>
+make clean         #clean out build files<br>
+<br>
+
+# Packages needed to build debian, rpm, and nsis packages (tested on Kali Linux)
+`sudo dpkg --add-architecture i386 && sudo apt-get update` <br>
+`sudo apt-get install wine32:i386 ` <br>
+`sudo apt install dpkg-dev dh-make fakeroot devscripts rpm rpm-build` <br>
+<br>
 
 # Suggestions
-Suggestions for improvement are welcome.
+Suggestions for improvement are welcome. <br>
 
 
-# for development
-sudo make debclean #clean out deb build files
-make clean         #clean out build files
-sudo dpkg --add-architecture i386 && sudo apt-get update 
-sudo apt-get install wine32:i386
