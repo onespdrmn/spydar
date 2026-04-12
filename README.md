@@ -19,8 +19,10 @@ It has support for updating itself to add new features.  This feature is current
 To compile this program you need a modern Linux computer with at least:<br>
 go version go1.24.9 linux/amd64<br><br>
 `sudo apt update` <br>
-`sudo apt install golang-go build-essential nsis mingw-w64` <br>
+`sudo apt install golang-go build-essential nsis mingw-w64 golang-github-akavel-rsrc-dev` <br>
 `go install github.com/akavel/rsrc@latest` <br>
+
+# Add to your .bashrc or .bash_profile and restart your terminal session for changes to take effect
 `export PATH=$PATH:$HOME/go/bin/`<br>
 
 <br>

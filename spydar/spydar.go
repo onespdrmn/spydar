@@ -431,7 +431,7 @@ func main() {
 		//go doUpdateProcess() //automatic code updates
 	}
 
-	go doPreciseMeasurements()
+	//go doPreciseMeasurements()
 
 	if *nogui == true {
 		measure()

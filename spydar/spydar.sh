@@ -7,5 +7,5 @@ python3 -m http.server  &
 sleep 1
 
 cd ..
-./spdr.linux
+./spydar.linux
 
