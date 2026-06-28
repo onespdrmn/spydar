@@ -37,10 +37,10 @@ import (
 var sidebar string = `
 <div id="mySidebar" class="sidebar">
   <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">×</a>
-  <a href="viewunique">View Unique</a>
-  <a href="viewall">View All</a>
-  <a href="settings">Settings</a>
-  <a href="help">Help</a>
+  <a href="viewall?nonce=%s">View All</a>
+  <a href="viewunique?nonce=%s">View Unique</a>
+  <a href="settings?nonce=%s">Settings</a>
+  <a href="help?nonce=%s">Help</a>
 </div>
 
 <div id="main">
@@ -263,6 +263,7 @@ var validatedmeasurelist []listentry = []listentry{}
 var validatedserverlist []dnsentry = []dnsentry{}
 var targetURL string = "https://data.spydar.org/input"
 var databaseFile string = "./sqlite-database.db"
+var Webnonce string = ""
 
 // do any initialization here
 func initdb() {
@@ -290,13 +291,6 @@ func initdb() {
 
 	}
 
-	/*
-		outfd, err = os.Create(outFile)
-		if err != nil {
-			log.Fatal(err.Error())
-		}
-	*/
-
 	sqliteDatabase, _ = sql.Open("sqlite3", databaseFile) // Open the created SQLite File
 
 	if fileCreated {
@@ -305,6 +299,24 @@ func initdb() {
 
 	// Set the maximum number of open connections to 1
 	sqliteDatabase.SetMaxOpenConns(1)
+
+	// read in webnonce from database
+	rows, err := sqliteDatabase.Query("SELECT webnonce FROM appsecurity")
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	defer rows.Close()
+
+	var webnonce string
+	for rows.Next() {
+		err = rows.Scan(&webnonce)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+
+		Webnonce = webnonce
+		break
+	}
 
 }
 
@@ -440,14 +452,17 @@ func main() {
 
 	initdb() //initialize the database
 
-	//http.HandleFunc("/scrollbuffer", scrollHandler)
+	if Webnonce == "" {
+		panic("webnonce is empty, something went wrong with database initialization")
+	}
+
 	http.HandleFunc("/viewall", viewAllHandler)
 	http.HandleFunc("/viewunique", viewUniqueHandler)
 	http.HandleFunc("/settings", settingsHandler)
 	http.HandleFunc("/help", helpHandler)
+	http.HandleFunc("/", indexHandler)
 	//fileHandler := http.FileServer(http.Dir("inputs")) // Serve static files from  "inputs" directory
 	//http.Handle("/in", fileHandler)
-	http.HandleFunc("/", indexHandler)
 
 	// Start the server in a goroutine
 	go func() {
@@ -969,6 +984,7 @@ func geoiplookup(names string) string {
 }
 
 func geturlargs(url string) map[string]string {
+
 	url = url[1:]
 
 	parsedurl := strings.Split(url, "?")
@@ -978,7 +994,7 @@ func geturlargs(url string) map[string]string {
 
 	args := parsedurl[1]
 
-	//fmt.Println("URLARGS:", args)
+	fmt.Println("URLARGS:", args)
 
 	slices := strings.Split(args, "&")
 
@@ -995,7 +1011,7 @@ func geturlargs(url string) map[string]string {
 
 		for i, _ := range parsedurl {
 			if i%2 == 0 {
-				//fmt.Println("DEBUG:", parsedurl2[i], parsedurl2[i+1])
+				fmt.Println("DEBUG:", parsedurl2[i], parsedurl2[i+1])
 				argsmap[parsedurl2[i]] = parsedurl2[i+1]
 			}
 		}
@@ -1029,27 +1045,33 @@ func viewUniqueHandler(w http.ResponseWriter, req *http.Request) {
 	var row *sql.Rows
 	var err error
 
+	name := ""
+	nonce := ""
+
+	urlmap := req.URL.Query()
+	name = urlmap.Get("name")
+	nonce = urlmap.Get("nonce")
+
+	//fmt.Println("viewUniqueHandler name:", name, "nonce:", nonce)
+
 	db := sqliteDatabase
 
-	url := req.URL.String()
-	if url == "" {
-		return
-	}
-
-	urlargsmap := geturlargs(url)
-	if urlargsmap == nil || len(urlargsmap) == 0 {
+	if name == "" {
 		noArgs = true
 	}
 
 	if noArgs == true {
 		row, err = db.Query("SELECT distinct measurements.name,descriptions.description from measurements join descriptions on measurements.name = descriptions.name")
 	} else {
-		if isInputSane1(urlargsmap) == false {
-			fmt.Fprintln(w, "INPUT IS NOT SANE")
-			return
-		}
+		/*
+			if isInputSane1(urlargsmap) == false {
+				fmt.Fprintln(w, "INPUT IS NOT SANE")
+				return
+			}
+		*/
 
-		row, err = db.Query(fmt.Sprintf("SELECT distinct * from measurements join descriptions on measurements.name = descriptions.name where measurements.name='%s'", urlargsmap["name"]))
+		//row, err = db.Query(fmt.Sprintf("SELECT distinct * from measurements join descriptions on measurements.name = descriptions.name where measurements.name='%s'", urlargsmap["name"]))
+		row, err = db.Query(fmt.Sprintf("SELECT distinct * from measurements join descriptions on measurements.name = descriptions.name where measurements.name='%s'", name))
 	}
 	if err != nil {
 		log.Fatal(err)
@@ -1064,7 +1086,7 @@ func viewUniqueHandler(w http.ResponseWriter, req *http.Request) {
 			var name string
 			var description string
 			row.Scan(&name, &description)
-			name = fmt.Sprintf("<a href=http://localhost:8080/viewunique?name=%s>%s</a>", name, name)
+			name = fmt.Sprintf("<a href=http://localhost:8080/viewunique?nonce=%s&name=%s>%s</a>", Webnonce, name, name)
 			rows += fmt.Sprintf("%v,%v\n", name, description)
 		}
 	} else {
@@ -1139,11 +1161,12 @@ func indexHandler(w http.ResponseWriter, req *http.Request) {
 	fmt.Fprintln(w, "</style>")
 	fmt.Fprintln(w, "</head>")
 	fmt.Fprintln(w, "<body style=\"background-color: #71A8DE;\">")
-	fmt.Fprintln(w, sidebar)
+	Sidebar := fmt.Sprintf(sidebar, Webnonce, Webnonce, Webnonce, Webnonce)
+	fmt.Fprintln(w, Sidebar)
 
 	fmt.Fprintln(w, "<h3> Welcome to SPYDAR DNS Measurement Tool</h3>")
 	fmt.Fprintln(w, "<p>This tool measures DNS caches for domain resolution behavior.  Use the sidebar to navigate through the results.</p>")
-	fmt.Fprintln(w, "<p>For help, click <a href=\"/help\">here</a>.</p>")
+	fmt.Fprintf(w, "<p>For help, click <a href=\"/help?nonce=%s\">here</a>.</p>", Webnonce)
 
 	fmt.Fprintln(w, "</body>")
 	fmt.Fprintln(w, "</html>")
@@ -1168,21 +1191,8 @@ func makeTableFullHtml(w http.ResponseWriter, columnnames string, rows string) {
 
 	fmt.Fprintln(w, "<body style=\"background-color: #71A8DE;\">")
 
-	fmt.Fprintln(w, sidebar)
-
-	/*
-		//picture
-		fmt.Fprintln(w, "<div class=iframe-container>")
-		fmt.Fprintln(w, "<iframe class=my-iframe1 src=\"frame1.html\"></iframe>")
-		fmt.Fprintln(w, "</div>")
-	*/
-
-	/*
-		///javascript scroll window
-		fmt.Fprintln(w, "<div class=iframe-container>")
-		fmt.Fprintln(w, "<canvas class=fblogo id=myCanvas width=640 height=400></canvas>")
-		fmt.Fprintln(w, "</div>")
-	*/
+	Sidebar := fmt.Sprintf(sidebar, Webnonce, Webnonce, Webnonce, Webnonce)
+	fmt.Fprintln(w, Sidebar)
 
 	fmt.Fprintln(w, "<br><br>")
 
@@ -1223,18 +1233,18 @@ func makeTableFullHtml(w http.ResponseWriter, columnnames string, rows string) {
 
 }
 
-/*
-// where the measurement list comes from
-var clientAuth *bool
-var nogui *bool
-
-// alternate way to specify dns server settings
-var dnsFile *string
-*/
-
 func settingsHandler(w http.ResponseWriter, req *http.Request) {
 	var dnsservers []dnsentry
 	var err error
+
+	//check the nonce to make sure the request is valid
+	if noncecheck(w, req) != 0 {
+		fmt.Println("Sidebar:", sidebar)
+		fmt.Println("webnonce:", Webnonce)
+		fmt.Fprintln(w, "nonce mismatch in settingsHandler, returning")
+		return
+	}
+
 	if *dnsFile != "" {
 		//log.Println("Reading DNS from file:", *dnsFile)
 		buf, err := os.ReadFile(*dnsFile)
@@ -1264,7 +1274,8 @@ func settingsHandler(w http.ResponseWriter, req *http.Request) {
 	fmt.Fprintln(w, "</style>")
 	fmt.Fprintln(w, "</head>")
 	fmt.Fprintln(w, "<body style=\"background-color: #71A8DE;\">")
-	fmt.Fprintln(w, sidebar)
+	Sidebar := fmt.Sprintf(sidebar, Webnonce, Webnonce, Webnonce, Webnonce)
+	fmt.Fprintln(w, Sidebar)
 
 	fmt.Fprintln(w, "<h3>DNS servers being measured</h3>")
 	for _, dnsserver := range dnsservers {
@@ -1293,6 +1304,12 @@ func settingsHandler(w http.ResponseWriter, req *http.Request) {
 
 func helpHandler(w http.ResponseWriter, req *http.Request) {
 
+	//check the nonce to make sure the request is valid
+	if noncecheck(w, req) != 0 {
+		fmt.Fprintln(w, "nonce mismatch in helpHandler, returning")
+		return
+	}
+
 	fmt.Fprintln(w, "<!DOCTYPE html>")
 	fmt.Fprintln(w, "<html lang=\"en\">")
 	fmt.Fprintln(w, "<head>")
@@ -1305,7 +1322,9 @@ func helpHandler(w http.ResponseWriter, req *http.Request) {
 	fmt.Fprintln(w, "</style>")
 	fmt.Fprintln(w, "</head>")
 	fmt.Fprintln(w, "<body style=\"background-color: #71A8DE;\">")
-	fmt.Fprintln(w, sidebar)
+	Sidebar := fmt.Sprintf(sidebar, Webnonce, Webnonce, Webnonce, Webnonce)
+	fmt.Println("Sidebar:", Sidebar)
+	fmt.Fprintln(w, Sidebar)
 
 	fmt.Fprintln(w, "<h3> Welcome to SPYDAR DNS Measurement Tool Help</h3>")
 	fmt.Fprintln(w, "<p>This tool measures DNS caches for malware domain resolution behavior.  Use the sidebar to navigate through the results.</p>")
@@ -1315,13 +1334,27 @@ func helpHandler(w http.ResponseWriter, req *http.Request) {
 	fmt.Fprintln(w, "</html>")
 }
 
+func noncecheck(w http.ResponseWriter, req *http.Request) int {
+	urlmap := req.URL.Query()
+	nonce := urlmap.Get("nonce")
+	if nonce != Webnonce {
+		return -1
+	}
+	return 0
+}
+
 func viewAllHandler(w http.ResponseWriter, req *http.Request) {
 	var row *sql.Rows
 	var err error
 	var count int = 0
 
-	db := sqliteDatabase
+	//check the nonce to make sure the request is valid
+	if noncecheck(w, req) != 0 {
+		fmt.Fprintln(w, "nonce mismatch in viewAllHandler, returning")
+		return
+	}
 
+	db := sqliteDatabase
 	row, err = db.Query("SELECT * from measurements join descriptions on measurements.name = descriptions.name")
 	if err != nil {
 		log.Fatal(err)
@@ -1337,7 +1370,6 @@ func viewAllHandler(w http.ResponseWriter, req *http.Request) {
 		var domaintype string
 		var dnsserver string
 		var answers string
-
 		var name2 string
 		var description string
 
@@ -1357,7 +1389,6 @@ func viewAllHandler(w http.ResponseWriter, req *http.Request) {
 		timestamp = t.String()
 
 		rows += fmt.Sprintf("%v,%v,%v,%v,%v,%v,%v\n", id, timestamp, name, domaintype, dnsserver, description, answers)
-		//fmt.Println(count, id, timestamp, name)
 		count++
 	}
 
@@ -1384,24 +1415,6 @@ func onReady() {
 
 	addQuitItem()
 
-	/*
-		// Serve static files from a "static" directory (or adjust as needed)
-		http.HandleFunc("/viewall", viewAllHandler)
-		http.HandleFunc("/viewunique", viewUniqueHandler)
-		http.HandleFunc("/scrollbuffer", scrollHandler)
-		http.HandleFunc("/settings", settingsHandler)
-		http.HandleFunc("/help", helpHandler)
-		fileHandler := http.FileServer(http.Dir("./static"))
-		http.Handle("/", fileHandler)
-
-		// Start the server in a goroutine
-		go func() {
-			port := ":8080"
-			fmt.Printf("Server starting on port %s\n", port)
-			log.Fatal(http.ListenAndServe(port, nil))
-		}()
-	*/
-
 	// We can manipulate the systray in other goroutines
 	go func() {
 		//var err error
@@ -1424,26 +1437,6 @@ func onReady() {
 			case <-mStatus.ClickedCh:
 				fmt.Println("Status...")
 				openBrowser("http://localhost:8080/viewunique") // Assuming index.html is in the static directory
-				/*
-					case <-mUpdate.ClickedCh:
-						fmt.Println("Doing nothing for now...")
-				*/
-
-				/*
-					if *inputFile != "" {
-						fmt.Println("update - reading list from file", *inputFile)
-						measurelist, err = readListFromFile(*inputFile)
-					} else {
-						fmt.Println("update - reading list from web url", *urlinputFile)
-						measurelist, err = readListFromWeb(*urlinputFile)
-					}
-
-					if err != nil {
-						log.Fatalf("Update failure", err)
-					}
-
-					fmt.Println("list updated successfully")
-				*/
 			case <-mEnabled.ClickedCh:
 				if mEnabled.Checked() {
 					fmt.Println("Disabled")
