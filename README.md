@@ -15,6 +15,11 @@ that are found in the cache are logged to sqlite-database.db in the directory wh
 
 It has support for updating itself to add new features.  This feature is currently disabled.
 
+#Recommend changing shell to bash on Kali Linux, which defaults to zsh
+chsh -s /usr/bin/bash
+
+#to make things easier, recommend you logout and back in after you've switched over to bash.
+
 # Packages required to compile
 To compile this program you need a modern Linux computer with at least:<br>
 go version go1.24.9 linux/amd64<br><br>

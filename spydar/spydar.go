@@ -2,9 +2,11 @@ package main
 
 import (
 	"bufio"
+	"crypto/rand"
 	"crypto/tls"
 	"crypto/x509"
 	_ "embed"
+	"encoding/binary"
 	"errors"
 	"flag"
 	"fmt"
@@ -285,6 +287,7 @@ func initdb() {
 		file.Close()
 		log.Println("Created:", databaseFile)
 		fileCreated = true
+
 	}
 
 	/*
@@ -305,8 +308,7 @@ func initdb() {
 
 }
 
-func createTables(db *sql.DB) {
-	///this is the table for the measurement results
+func createTable_measurements(db *sql.DB) {
 	createTableSQL := `CREATE TABLE measurements (
 		"id" integer NOT NULL PRIMARY KEY AUTOINCREMENT,		
 		"time" TEXT,
@@ -314,7 +316,7 @@ func createTables(db *sql.DB) {
 		"domaintype" TEXT, 
 		"dnsserver" TEXT,
 		"answers" TEXT
-	  );` // SQL Statement for Create Table
+	  );`
 
 	log.Println("Create domain measurements table...")
 	statement, err := db.Prepare(createTableSQL) // Prepare SQL Statement
@@ -323,22 +325,78 @@ func createTables(db *sql.DB) {
 	}
 	statement.Exec() // Execute SQL Statements
 	log.Println("measurements table created")
+}
 
-	///this is the table for the domain descriptions
+func createTable_security(db *sql.DB) {
+	var webnonce [8]byte
 
-	log.Println("Create domain descriptions table...")
-	createTableSQL = `CREATE TABLE descriptions (
-				"name" TEXT NOT NULL UNIQUE,
-				"description" TEXT NO NULL
-				);`
+	log.Println("Creating appsecurity table.")
+	//createTableSQL := `CREATE TABLE security (
+	//	"nonce" integer NOT NULL PRIMARY KEY AUTOINCREMENT,
+	//);`
+	createTableSQL := `CREATE TABLE appsecurity (
+				"webnonce" TEXT
+    );`
 
-	statement, err = db.Prepare(createTableSQL)
+	statement, err := db.Prepare(createTableSQL)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 
 	statement.Exec() //Execute SQL statement
-	log.Println("descriptions table created")
+	log.Println("appsecurity table created")
+
+	///generate a random 64-bit nonce for security and store it in the database
+	_, err = rand.Read(webnonce[:])
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	value := binary.BigEndian.Uint64(webnonce[:])
+	webnonce_str := fmt.Sprintf("%016x", value)
+
+	statement, err = db.Prepare("INSERT INTO appsecurity (webnonce) VALUES (?)")
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	_, err = statement.Exec(webnonce_str)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+}
+
+func createTable_descriptions(db *sql.DB) {
+	log.Println("Creating domain descriptions table...")
+
+	createTableSQL := `CREATE TABLE descriptions (
+				"name" TEXT NOT NULL UNIQUE,
+				"description" TEXT NOT NULL
+				);`
+
+	statement, err := db.Prepare(createTableSQL)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	statement.Exec() //Execute SQL statement
+	log.Println("Domain descriptions table created")
+
+}
+
+func createTables(db *sql.DB) {
+	//////////////////////////////////////////////////////////////
+	///this is the table for the measurement results
+	createTable_measurements(db)
+
+	//////////////////////////////////////////////////////////////
+	///this is the table for spydar_security
+	createTable_security(db)
+
+	//////////////////////////////////////////////////////////////
+	///this is the table for the domain descriptions
+	createTable_descriptions(db)
 
 }
 
