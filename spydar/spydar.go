@@ -1,7 +1,6 @@
 package main
 
 import (
-	"crypto/rand"
 	"crypto/tls"
 	"crypto/x509"
 	_ "embed"
@@ -120,6 +119,8 @@ func initdb() {
 	}
 	defer rows.Close()
 
+	///use /etc/machine-id or equivalent to get a unique machine id for this machine
+
 	var webnonce string
 	for rows.Next() {
 		err = rows.Scan(&webnonce)
@@ -153,7 +154,8 @@ func createTable_measurements(db *sql.DB) {
 }
 
 func createTable_security(db *sql.DB) {
-	var webnonce [8]byte
+	//var webnonce [8]byte
+	var webnonce string
 
 	log.Println("Creating appsecurity table.")
 	//createTableSQL := `CREATE TABLE security (
@@ -171,13 +173,15 @@ func createTable_security(db *sql.DB) {
 	statement.Exec() //Execute SQL statement
 	log.Println("appsecurity table created")
 
-	///generate a random 64-bit nonce for security and store it in the database
-	_, err = rand.Read(webnonce[:])
-	if err != nil {
-		log.Fatal(err.Error())
-	}
+	///get a random nonce for security and store it in the database
+	/*	_, err = rand.Read(webnonce[:])
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+	*/
+	webnonce = getMachineID() //get a unique machine id for this machine
 
-	value := binary.BigEndian.Uint64(webnonce[:])
+	value := binary.BigEndian.Uint64([]byte(webnonce[:]))
 	webnonce_str := fmt.Sprintf("%016x", value)
 
 	statement, err = db.Prepare("INSERT INTO appsecurity (webnonce) VALUES (?)")
